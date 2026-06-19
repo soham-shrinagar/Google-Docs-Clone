@@ -1,0 +1,23 @@
+{
+  "name": "collabdocs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-grade real-time collaborative document editor",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev -w backend\" \"wait-on -t 60000 http://127.0.0.1:3001/health && npm run dev -w frontend\"",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "db:generate": "npm run db:generate -w backend",
+    "db:push": "npm run db:push -w backend",
+    "db:migrate": "npm run db:migrate -w backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "wait-on": "^8.0.3"
+  }
+}

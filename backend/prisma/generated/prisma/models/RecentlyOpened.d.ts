@@ -1,0 +1,1245 @@
+import type * as runtime from "@prisma/client/runtime/client";
+import type * as Prisma from "../internal/prismaNamespace.js";
+/**
+ * Model RecentlyOpened
+ *
+ */
+export type RecentlyOpenedModel = runtime.Types.Result.DefaultSelection<Prisma.$RecentlyOpenedPayload>;
+export type AggregateRecentlyOpened = {
+    _count: RecentlyOpenedCountAggregateOutputType | null;
+    _min: RecentlyOpenedMinAggregateOutputType | null;
+    _max: RecentlyOpenedMaxAggregateOutputType | null;
+};
+export type RecentlyOpenedMinAggregateOutputType = {
+    id: string | null;
+    userId: string | null;
+    documentId: string | null;
+    openedAt: Date | null;
+};
+export type RecentlyOpenedMaxAggregateOutputType = {
+    id: string | null;
+    userId: string | null;
+    documentId: string | null;
+    openedAt: Date | null;
+};
+export type RecentlyOpenedCountAggregateOutputType = {
+    id: number;
+    userId: number;
+    documentId: number;
+    openedAt: number;
+    _all: number;
+};
+export type RecentlyOpenedMinAggregateInputType = {
+    id?: true;
+    userId?: true;
+    documentId?: true;
+    openedAt?: true;
+};
+export type RecentlyOpenedMaxAggregateInputType = {
+    id?: true;
+    userId?: true;
+    documentId?: true;
+    openedAt?: true;
+};
+export type RecentlyOpenedCountAggregateInputType = {
+    id?: true;
+    userId?: true;
+    documentId?: true;
+    openedAt?: true;
+    _all?: true;
+};
+export type RecentlyOpenedAggregateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Filter which RecentlyOpened to aggregate.
+     */
+    where?: Prisma.RecentlyOpenedWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of RecentlyOpeneds to fetch.
+     */
+    orderBy?: Prisma.RecentlyOpenedOrderByWithRelationInput | Prisma.RecentlyOpenedOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the start position
+     */
+    cursor?: Prisma.RecentlyOpenedWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` RecentlyOpeneds from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` RecentlyOpeneds.
+     */
+    skip?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Count returned RecentlyOpeneds
+    **/
+    _count?: true | RecentlyOpenedCountAggregateInputType;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the minimum value
+    **/
+    _min?: RecentlyOpenedMinAggregateInputType;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the maximum value
+    **/
+    _max?: RecentlyOpenedMaxAggregateInputType;
+};
+export type GetRecentlyOpenedAggregateType<T extends RecentlyOpenedAggregateArgs> = {
+    [P in keyof T & keyof AggregateRecentlyOpened]: P extends '_count' | 'count' ? T[P] extends true ? number : Prisma.GetScalarType<T[P], AggregateRecentlyOpened[P]> : Prisma.GetScalarType<T[P], AggregateRecentlyOpened[P]>;
+};
+export type RecentlyOpenedGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    where?: Prisma.RecentlyOpenedWhereInput;
+    orderBy?: Prisma.RecentlyOpenedOrderByWithAggregationInput | Prisma.RecentlyOpenedOrderByWithAggregationInput[];
+    by: Prisma.RecentlyOpenedScalarFieldEnum[] | Prisma.RecentlyOpenedScalarFieldEnum;
+    having?: Prisma.RecentlyOpenedScalarWhereWithAggregatesInput;
+    take?: number;
+    skip?: number;
+    _count?: RecentlyOpenedCountAggregateInputType | true;
+    _min?: RecentlyOpenedMinAggregateInputType;
+    _max?: RecentlyOpenedMaxAggregateInputType;
+};
+export type RecentlyOpenedGroupByOutputType = {
+    id: string;
+    userId: string;
+    documentId: string;
+    openedAt: Date;
+    _count: RecentlyOpenedCountAggregateOutputType | null;
+    _min: RecentlyOpenedMinAggregateOutputType | null;
+    _max: RecentlyOpenedMaxAggregateOutputType | null;
+};
+export type GetRecentlyOpenedGroupByPayload<T extends RecentlyOpenedGroupByArgs> = Prisma.PrismaPromise<Array<Prisma.PickEnumerable<RecentlyOpenedGroupByOutputType, T['by']> & {
+    [P in ((keyof T) & (keyof RecentlyOpenedGroupByOutputType))]: P extends '_count' ? T[P] extends boolean ? number : Prisma.GetScalarType<T[P], RecentlyOpenedGroupByOutputType[P]> : Prisma.GetScalarType<T[P], RecentlyOpenedGroupByOutputType[P]>;
+}>>;
+export type RecentlyOpenedWhereInput = {
+    AND?: Prisma.RecentlyOpenedWhereInput | Prisma.RecentlyOpenedWhereInput[];
+    OR?: Prisma.RecentlyOpenedWhereInput[];
+    NOT?: Prisma.RecentlyOpenedWhereInput | Prisma.RecentlyOpenedWhereInput[];
+    id?: Prisma.StringFilter<"RecentlyOpened"> | string;
+    userId?: Prisma.StringFilter<"RecentlyOpened"> | string;
+    documentId?: Prisma.StringFilter<"RecentlyOpened"> | string;
+    openedAt?: Prisma.DateTimeFilter<"RecentlyOpened"> | Date | string;
+    user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+    document?: Prisma.XOR<Prisma.DocumentScalarRelationFilter, Prisma.DocumentWhereInput>;
+};
+export type RecentlyOpenedOrderByWithRelationInput = {
+    id?: Prisma.SortOrder;
+    userId?: Prisma.SortOrder;
+    documentId?: Prisma.SortOrder;
+    openedAt?: Prisma.SortOrder;
+    user?: Prisma.UserOrderByWithRelationInput;
+    document?: Prisma.DocumentOrderByWithRelationInput;
+};
+export type RecentlyOpenedWhereUniqueInput = Prisma.AtLeast<{
+    id?: string;
+    userId_documentId?: Prisma.RecentlyOpenedUserIdDocumentIdCompoundUniqueInput;
+    AND?: Prisma.RecentlyOpenedWhereInput | Prisma.RecentlyOpenedWhereInput[];
+    OR?: Prisma.RecentlyOpenedWhereInput[];
+    NOT?: Prisma.RecentlyOpenedWhereInput | Prisma.RecentlyOpenedWhereInput[];
+    userId?: Prisma.StringFilter<"RecentlyOpened"> | string;
+    documentId?: Prisma.StringFilter<"RecentlyOpened"> | string;
+    openedAt?: Prisma.DateTimeFilter<"RecentlyOpened"> | Date | string;
+    user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>;
+    document?: Prisma.XOR<Prisma.DocumentScalarRelationFilter, Prisma.DocumentWhereInput>;
+}, "id" | "userId_documentId">;
+export type RecentlyOpenedOrderByWithAggregationInput = {
+    id?: Prisma.SortOrder;
+    userId?: Prisma.SortOrder;
+    documentId?: Prisma.SortOrder;
+    openedAt?: Prisma.SortOrder;
+    _count?: Prisma.RecentlyOpenedCountOrderByAggregateInput;
+    _max?: Prisma.RecentlyOpenedMaxOrderByAggregateInput;
+    _min?: Prisma.RecentlyOpenedMinOrderByAggregateInput;
+};
+export type RecentlyOpenedScalarWhereWithAggregatesInput = {
+    AND?: Prisma.RecentlyOpenedScalarWhereWithAggregatesInput | Prisma.RecentlyOpenedScalarWhereWithAggregatesInput[];
+    OR?: Prisma.RecentlyOpenedScalarWhereWithAggregatesInput[];
+    NOT?: Prisma.RecentlyOpenedScalarWhereWithAggregatesInput | Prisma.RecentlyOpenedScalarWhereWithAggregatesInput[];
+    id?: Prisma.StringWithAggregatesFilter<"RecentlyOpened"> | string;
+    userId?: Prisma.StringWithAggregatesFilter<"RecentlyOpened"> | string;
+    documentId?: Prisma.StringWithAggregatesFilter<"RecentlyOpened"> | string;
+    openedAt?: Prisma.DateTimeWithAggregatesFilter<"RecentlyOpened"> | Date | string;
+};
+export type RecentlyOpenedCreateInput = {
+    id?: string;
+    openedAt?: Date | string;
+    user: Prisma.UserCreateNestedOneWithoutRecentlyOpenedInput;
+    document: Prisma.DocumentCreateNestedOneWithoutRecentlyOpenedInput;
+};
+export type RecentlyOpenedUncheckedCreateInput = {
+    id?: string;
+    userId: string;
+    documentId: string;
+    openedAt?: Date | string;
+};
+export type RecentlyOpenedUpdateInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    openedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    user?: Prisma.UserUpdateOneRequiredWithoutRecentlyOpenedNestedInput;
+    document?: Prisma.DocumentUpdateOneRequiredWithoutRecentlyOpenedNestedInput;
+};
+export type RecentlyOpenedUncheckedUpdateInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    userId?: Prisma.StringFieldUpdateOperationsInput | string;
+    documentId?: Prisma.StringFieldUpdateOperationsInput | string;
+    openedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type RecentlyOpenedCreateManyInput = {
+    id?: string;
+    userId: string;
+    documentId: string;
+    openedAt?: Date | string;
+};
+export type RecentlyOpenedUpdateManyMutationInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    openedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type RecentlyOpenedUncheckedUpdateManyInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    userId?: Prisma.StringFieldUpdateOperationsInput | string;
+    documentId?: Prisma.StringFieldUpdateOperationsInput | string;
+    openedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type RecentlyOpenedListRelationFilter = {
+    every?: Prisma.RecentlyOpenedWhereInput;
+    some?: Prisma.RecentlyOpenedWhereInput;
+    none?: Prisma.RecentlyOpenedWhereInput;
+};
+export type RecentlyOpenedOrderByRelationAggregateInput = {
+    _count?: Prisma.SortOrder;
+};
+export type RecentlyOpenedUserIdDocumentIdCompoundUniqueInput = {
+    userId: string;
+    documentId: string;
+};
+export type RecentlyOpenedCountOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    userId?: Prisma.SortOrder;
+    documentId?: Prisma.SortOrder;
+    openedAt?: Prisma.SortOrder;
+};
+export type RecentlyOpenedMaxOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    userId?: Prisma.SortOrder;
+    documentId?: Prisma.SortOrder;
+    openedAt?: Prisma.SortOrder;
+};
+export type RecentlyOpenedMinOrderByAggregateInput = {
+    id?: Prisma.SortOrder;
+    userId?: Prisma.SortOrder;
+    documentId?: Prisma.SortOrder;
+    openedAt?: Prisma.SortOrder;
+};
+export type RecentlyOpenedCreateNestedManyWithoutUserInput = {
+    create?: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutUserInput, Prisma.RecentlyOpenedUncheckedCreateWithoutUserInput> | Prisma.RecentlyOpenedCreateWithoutUserInput[] | Prisma.RecentlyOpenedUncheckedCreateWithoutUserInput[];
+    connectOrCreate?: Prisma.RecentlyOpenedCreateOrConnectWithoutUserInput | Prisma.RecentlyOpenedCreateOrConnectWithoutUserInput[];
+    createMany?: Prisma.RecentlyOpenedCreateManyUserInputEnvelope;
+    connect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+};
+export type RecentlyOpenedUncheckedCreateNestedManyWithoutUserInput = {
+    create?: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutUserInput, Prisma.RecentlyOpenedUncheckedCreateWithoutUserInput> | Prisma.RecentlyOpenedCreateWithoutUserInput[] | Prisma.RecentlyOpenedUncheckedCreateWithoutUserInput[];
+    connectOrCreate?: Prisma.RecentlyOpenedCreateOrConnectWithoutUserInput | Prisma.RecentlyOpenedCreateOrConnectWithoutUserInput[];
+    createMany?: Prisma.RecentlyOpenedCreateManyUserInputEnvelope;
+    connect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+};
+export type RecentlyOpenedUpdateManyWithoutUserNestedInput = {
+    create?: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutUserInput, Prisma.RecentlyOpenedUncheckedCreateWithoutUserInput> | Prisma.RecentlyOpenedCreateWithoutUserInput[] | Prisma.RecentlyOpenedUncheckedCreateWithoutUserInput[];
+    connectOrCreate?: Prisma.RecentlyOpenedCreateOrConnectWithoutUserInput | Prisma.RecentlyOpenedCreateOrConnectWithoutUserInput[];
+    upsert?: Prisma.RecentlyOpenedUpsertWithWhereUniqueWithoutUserInput | Prisma.RecentlyOpenedUpsertWithWhereUniqueWithoutUserInput[];
+    createMany?: Prisma.RecentlyOpenedCreateManyUserInputEnvelope;
+    set?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    disconnect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    delete?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    connect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    update?: Prisma.RecentlyOpenedUpdateWithWhereUniqueWithoutUserInput | Prisma.RecentlyOpenedUpdateWithWhereUniqueWithoutUserInput[];
+    updateMany?: Prisma.RecentlyOpenedUpdateManyWithWhereWithoutUserInput | Prisma.RecentlyOpenedUpdateManyWithWhereWithoutUserInput[];
+    deleteMany?: Prisma.RecentlyOpenedScalarWhereInput | Prisma.RecentlyOpenedScalarWhereInput[];
+};
+export type RecentlyOpenedUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutUserInput, Prisma.RecentlyOpenedUncheckedCreateWithoutUserInput> | Prisma.RecentlyOpenedCreateWithoutUserInput[] | Prisma.RecentlyOpenedUncheckedCreateWithoutUserInput[];
+    connectOrCreate?: Prisma.RecentlyOpenedCreateOrConnectWithoutUserInput | Prisma.RecentlyOpenedCreateOrConnectWithoutUserInput[];
+    upsert?: Prisma.RecentlyOpenedUpsertWithWhereUniqueWithoutUserInput | Prisma.RecentlyOpenedUpsertWithWhereUniqueWithoutUserInput[];
+    createMany?: Prisma.RecentlyOpenedCreateManyUserInputEnvelope;
+    set?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    disconnect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    delete?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    connect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    update?: Prisma.RecentlyOpenedUpdateWithWhereUniqueWithoutUserInput | Prisma.RecentlyOpenedUpdateWithWhereUniqueWithoutUserInput[];
+    updateMany?: Prisma.RecentlyOpenedUpdateManyWithWhereWithoutUserInput | Prisma.RecentlyOpenedUpdateManyWithWhereWithoutUserInput[];
+    deleteMany?: Prisma.RecentlyOpenedScalarWhereInput | Prisma.RecentlyOpenedScalarWhereInput[];
+};
+export type RecentlyOpenedCreateNestedManyWithoutDocumentInput = {
+    create?: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutDocumentInput, Prisma.RecentlyOpenedUncheckedCreateWithoutDocumentInput> | Prisma.RecentlyOpenedCreateWithoutDocumentInput[] | Prisma.RecentlyOpenedUncheckedCreateWithoutDocumentInput[];
+    connectOrCreate?: Prisma.RecentlyOpenedCreateOrConnectWithoutDocumentInput | Prisma.RecentlyOpenedCreateOrConnectWithoutDocumentInput[];
+    createMany?: Prisma.RecentlyOpenedCreateManyDocumentInputEnvelope;
+    connect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+};
+export type RecentlyOpenedUncheckedCreateNestedManyWithoutDocumentInput = {
+    create?: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutDocumentInput, Prisma.RecentlyOpenedUncheckedCreateWithoutDocumentInput> | Prisma.RecentlyOpenedCreateWithoutDocumentInput[] | Prisma.RecentlyOpenedUncheckedCreateWithoutDocumentInput[];
+    connectOrCreate?: Prisma.RecentlyOpenedCreateOrConnectWithoutDocumentInput | Prisma.RecentlyOpenedCreateOrConnectWithoutDocumentInput[];
+    createMany?: Prisma.RecentlyOpenedCreateManyDocumentInputEnvelope;
+    connect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+};
+export type RecentlyOpenedUpdateManyWithoutDocumentNestedInput = {
+    create?: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutDocumentInput, Prisma.RecentlyOpenedUncheckedCreateWithoutDocumentInput> | Prisma.RecentlyOpenedCreateWithoutDocumentInput[] | Prisma.RecentlyOpenedUncheckedCreateWithoutDocumentInput[];
+    connectOrCreate?: Prisma.RecentlyOpenedCreateOrConnectWithoutDocumentInput | Prisma.RecentlyOpenedCreateOrConnectWithoutDocumentInput[];
+    upsert?: Prisma.RecentlyOpenedUpsertWithWhereUniqueWithoutDocumentInput | Prisma.RecentlyOpenedUpsertWithWhereUniqueWithoutDocumentInput[];
+    createMany?: Prisma.RecentlyOpenedCreateManyDocumentInputEnvelope;
+    set?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    disconnect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    delete?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    connect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    update?: Prisma.RecentlyOpenedUpdateWithWhereUniqueWithoutDocumentInput | Prisma.RecentlyOpenedUpdateWithWhereUniqueWithoutDocumentInput[];
+    updateMany?: Prisma.RecentlyOpenedUpdateManyWithWhereWithoutDocumentInput | Prisma.RecentlyOpenedUpdateManyWithWhereWithoutDocumentInput[];
+    deleteMany?: Prisma.RecentlyOpenedScalarWhereInput | Prisma.RecentlyOpenedScalarWhereInput[];
+};
+export type RecentlyOpenedUncheckedUpdateManyWithoutDocumentNestedInput = {
+    create?: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutDocumentInput, Prisma.RecentlyOpenedUncheckedCreateWithoutDocumentInput> | Prisma.RecentlyOpenedCreateWithoutDocumentInput[] | Prisma.RecentlyOpenedUncheckedCreateWithoutDocumentInput[];
+    connectOrCreate?: Prisma.RecentlyOpenedCreateOrConnectWithoutDocumentInput | Prisma.RecentlyOpenedCreateOrConnectWithoutDocumentInput[];
+    upsert?: Prisma.RecentlyOpenedUpsertWithWhereUniqueWithoutDocumentInput | Prisma.RecentlyOpenedUpsertWithWhereUniqueWithoutDocumentInput[];
+    createMany?: Prisma.RecentlyOpenedCreateManyDocumentInputEnvelope;
+    set?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    disconnect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    delete?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    connect?: Prisma.RecentlyOpenedWhereUniqueInput | Prisma.RecentlyOpenedWhereUniqueInput[];
+    update?: Prisma.RecentlyOpenedUpdateWithWhereUniqueWithoutDocumentInput | Prisma.RecentlyOpenedUpdateWithWhereUniqueWithoutDocumentInput[];
+    updateMany?: Prisma.RecentlyOpenedUpdateManyWithWhereWithoutDocumentInput | Prisma.RecentlyOpenedUpdateManyWithWhereWithoutDocumentInput[];
+    deleteMany?: Prisma.RecentlyOpenedScalarWhereInput | Prisma.RecentlyOpenedScalarWhereInput[];
+};
+export type RecentlyOpenedCreateWithoutUserInput = {
+    id?: string;
+    openedAt?: Date | string;
+    document: Prisma.DocumentCreateNestedOneWithoutRecentlyOpenedInput;
+};
+export type RecentlyOpenedUncheckedCreateWithoutUserInput = {
+    id?: string;
+    documentId: string;
+    openedAt?: Date | string;
+};
+export type RecentlyOpenedCreateOrConnectWithoutUserInput = {
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+    create: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutUserInput, Prisma.RecentlyOpenedUncheckedCreateWithoutUserInput>;
+};
+export type RecentlyOpenedCreateManyUserInputEnvelope = {
+    data: Prisma.RecentlyOpenedCreateManyUserInput | Prisma.RecentlyOpenedCreateManyUserInput[];
+    skipDuplicates?: boolean;
+};
+export type RecentlyOpenedUpsertWithWhereUniqueWithoutUserInput = {
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+    update: Prisma.XOR<Prisma.RecentlyOpenedUpdateWithoutUserInput, Prisma.RecentlyOpenedUncheckedUpdateWithoutUserInput>;
+    create: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutUserInput, Prisma.RecentlyOpenedUncheckedCreateWithoutUserInput>;
+};
+export type RecentlyOpenedUpdateWithWhereUniqueWithoutUserInput = {
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+    data: Prisma.XOR<Prisma.RecentlyOpenedUpdateWithoutUserInput, Prisma.RecentlyOpenedUncheckedUpdateWithoutUserInput>;
+};
+export type RecentlyOpenedUpdateManyWithWhereWithoutUserInput = {
+    where: Prisma.RecentlyOpenedScalarWhereInput;
+    data: Prisma.XOR<Prisma.RecentlyOpenedUpdateManyMutationInput, Prisma.RecentlyOpenedUncheckedUpdateManyWithoutUserInput>;
+};
+export type RecentlyOpenedScalarWhereInput = {
+    AND?: Prisma.RecentlyOpenedScalarWhereInput | Prisma.RecentlyOpenedScalarWhereInput[];
+    OR?: Prisma.RecentlyOpenedScalarWhereInput[];
+    NOT?: Prisma.RecentlyOpenedScalarWhereInput | Prisma.RecentlyOpenedScalarWhereInput[];
+    id?: Prisma.StringFilter<"RecentlyOpened"> | string;
+    userId?: Prisma.StringFilter<"RecentlyOpened"> | string;
+    documentId?: Prisma.StringFilter<"RecentlyOpened"> | string;
+    openedAt?: Prisma.DateTimeFilter<"RecentlyOpened"> | Date | string;
+};
+export type RecentlyOpenedCreateWithoutDocumentInput = {
+    id?: string;
+    openedAt?: Date | string;
+    user: Prisma.UserCreateNestedOneWithoutRecentlyOpenedInput;
+};
+export type RecentlyOpenedUncheckedCreateWithoutDocumentInput = {
+    id?: string;
+    userId: string;
+    openedAt?: Date | string;
+};
+export type RecentlyOpenedCreateOrConnectWithoutDocumentInput = {
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+    create: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutDocumentInput, Prisma.RecentlyOpenedUncheckedCreateWithoutDocumentInput>;
+};
+export type RecentlyOpenedCreateManyDocumentInputEnvelope = {
+    data: Prisma.RecentlyOpenedCreateManyDocumentInput | Prisma.RecentlyOpenedCreateManyDocumentInput[];
+    skipDuplicates?: boolean;
+};
+export type RecentlyOpenedUpsertWithWhereUniqueWithoutDocumentInput = {
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+    update: Prisma.XOR<Prisma.RecentlyOpenedUpdateWithoutDocumentInput, Prisma.RecentlyOpenedUncheckedUpdateWithoutDocumentInput>;
+    create: Prisma.XOR<Prisma.RecentlyOpenedCreateWithoutDocumentInput, Prisma.RecentlyOpenedUncheckedCreateWithoutDocumentInput>;
+};
+export type RecentlyOpenedUpdateWithWhereUniqueWithoutDocumentInput = {
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+    data: Prisma.XOR<Prisma.RecentlyOpenedUpdateWithoutDocumentInput, Prisma.RecentlyOpenedUncheckedUpdateWithoutDocumentInput>;
+};
+export type RecentlyOpenedUpdateManyWithWhereWithoutDocumentInput = {
+    where: Prisma.RecentlyOpenedScalarWhereInput;
+    data: Prisma.XOR<Prisma.RecentlyOpenedUpdateManyMutationInput, Prisma.RecentlyOpenedUncheckedUpdateManyWithoutDocumentInput>;
+};
+export type RecentlyOpenedCreateManyUserInput = {
+    id?: string;
+    documentId: string;
+    openedAt?: Date | string;
+};
+export type RecentlyOpenedUpdateWithoutUserInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    openedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    document?: Prisma.DocumentUpdateOneRequiredWithoutRecentlyOpenedNestedInput;
+};
+export type RecentlyOpenedUncheckedUpdateWithoutUserInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    documentId?: Prisma.StringFieldUpdateOperationsInput | string;
+    openedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type RecentlyOpenedUncheckedUpdateManyWithoutUserInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    documentId?: Prisma.StringFieldUpdateOperationsInput | string;
+    openedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type RecentlyOpenedCreateManyDocumentInput = {
+    id?: string;
+    userId: string;
+    openedAt?: Date | string;
+};
+export type RecentlyOpenedUpdateWithoutDocumentInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    openedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+    user?: Prisma.UserUpdateOneRequiredWithoutRecentlyOpenedNestedInput;
+};
+export type RecentlyOpenedUncheckedUpdateWithoutDocumentInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    userId?: Prisma.StringFieldUpdateOperationsInput | string;
+    openedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type RecentlyOpenedUncheckedUpdateManyWithoutDocumentInput = {
+    id?: Prisma.StringFieldUpdateOperationsInput | string;
+    userId?: Prisma.StringFieldUpdateOperationsInput | string;
+    openedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
+};
+export type RecentlyOpenedSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+    id?: boolean;
+    userId?: boolean;
+    documentId?: boolean;
+    openedAt?: boolean;
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    document?: boolean | Prisma.DocumentDefaultArgs<ExtArgs>;
+}, ExtArgs["result"]["recentlyOpened"]>;
+export type RecentlyOpenedSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+    id?: boolean;
+    userId?: boolean;
+    documentId?: boolean;
+    openedAt?: boolean;
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    document?: boolean | Prisma.DocumentDefaultArgs<ExtArgs>;
+}, ExtArgs["result"]["recentlyOpened"]>;
+export type RecentlyOpenedSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+    id?: boolean;
+    userId?: boolean;
+    documentId?: boolean;
+    openedAt?: boolean;
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    document?: boolean | Prisma.DocumentDefaultArgs<ExtArgs>;
+}, ExtArgs["result"]["recentlyOpened"]>;
+export type RecentlyOpenedSelectScalar = {
+    id?: boolean;
+    userId?: boolean;
+    documentId?: boolean;
+    openedAt?: boolean;
+};
+export type RecentlyOpenedOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "documentId" | "openedAt", ExtArgs["result"]["recentlyOpened"]>;
+export type RecentlyOpenedInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    document?: boolean | Prisma.DocumentDefaultArgs<ExtArgs>;
+};
+export type RecentlyOpenedIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    document?: boolean | Prisma.DocumentDefaultArgs<ExtArgs>;
+};
+export type RecentlyOpenedIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    user?: boolean | Prisma.UserDefaultArgs<ExtArgs>;
+    document?: boolean | Prisma.DocumentDefaultArgs<ExtArgs>;
+};
+export type $RecentlyOpenedPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    name: "RecentlyOpened";
+    objects: {
+        user: Prisma.$UserPayload<ExtArgs>;
+        document: Prisma.$DocumentPayload<ExtArgs>;
+    };
+    scalars: runtime.Types.Extensions.GetPayloadResult<{
+        id: string;
+        userId: string;
+        documentId: string;
+        openedAt: Date;
+    }, ExtArgs["result"]["recentlyOpened"]>;
+    composites: {};
+};
+export type RecentlyOpenedGetPayload<S extends boolean | null | undefined | RecentlyOpenedDefaultArgs> = runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload, S>;
+export type RecentlyOpenedCountArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = Omit<RecentlyOpenedFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+    select?: RecentlyOpenedCountAggregateInputType | true;
+};
+export interface RecentlyOpenedDelegate<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: {
+        types: Prisma.TypeMap<ExtArgs>['model']['RecentlyOpened'];
+        meta: {
+            name: 'RecentlyOpened';
+        };
+    };
+    /**
+     * Find zero or one RecentlyOpened that matches the filter.
+     * @param {RecentlyOpenedFindUniqueArgs} args - Arguments to find a RecentlyOpened
+     * @example
+     * // Get one RecentlyOpened
+     * const recentlyOpened = await prisma.recentlyOpened.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RecentlyOpenedFindUniqueArgs>(args: Prisma.SelectSubset<T, RecentlyOpenedFindUniqueArgs<ExtArgs>>): Prisma.Prisma__RecentlyOpenedClient<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Find one RecentlyOpened that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {RecentlyOpenedFindUniqueOrThrowArgs} args - Arguments to find a RecentlyOpened
+     * @example
+     * // Get one RecentlyOpened
+     * const recentlyOpened = await prisma.recentlyOpened.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RecentlyOpenedFindUniqueOrThrowArgs>(args: Prisma.SelectSubset<T, RecentlyOpenedFindUniqueOrThrowArgs<ExtArgs>>): Prisma.Prisma__RecentlyOpenedClient<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Find the first RecentlyOpened that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecentlyOpenedFindFirstArgs} args - Arguments to find a RecentlyOpened
+     * @example
+     * // Get one RecentlyOpened
+     * const recentlyOpened = await prisma.recentlyOpened.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RecentlyOpenedFindFirstArgs>(args?: Prisma.SelectSubset<T, RecentlyOpenedFindFirstArgs<ExtArgs>>): Prisma.Prisma__RecentlyOpenedClient<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Find the first RecentlyOpened that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecentlyOpenedFindFirstOrThrowArgs} args - Arguments to find a RecentlyOpened
+     * @example
+     * // Get one RecentlyOpened
+     * const recentlyOpened = await prisma.recentlyOpened.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RecentlyOpenedFindFirstOrThrowArgs>(args?: Prisma.SelectSubset<T, RecentlyOpenedFindFirstOrThrowArgs<ExtArgs>>): Prisma.Prisma__RecentlyOpenedClient<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Find zero or more RecentlyOpeneds that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecentlyOpenedFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RecentlyOpeneds
+     * const recentlyOpeneds = await prisma.recentlyOpened.findMany()
+     *
+     * // Get first 10 RecentlyOpeneds
+     * const recentlyOpeneds = await prisma.recentlyOpened.findMany({ take: 10 })
+     *
+     * // Only select the `id`
+     * const recentlyOpenedWithIdOnly = await prisma.recentlyOpened.findMany({ select: { id: true } })
+     *
+     */
+    findMany<T extends RecentlyOpenedFindManyArgs>(args?: Prisma.SelectSubset<T, RecentlyOpenedFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>;
+    /**
+     * Create a RecentlyOpened.
+     * @param {RecentlyOpenedCreateArgs} args - Arguments to create a RecentlyOpened.
+     * @example
+     * // Create one RecentlyOpened
+     * const RecentlyOpened = await prisma.recentlyOpened.create({
+     *   data: {
+     *     // ... data to create a RecentlyOpened
+     *   }
+     * })
+     *
+     */
+    create<T extends RecentlyOpenedCreateArgs>(args: Prisma.SelectSubset<T, RecentlyOpenedCreateArgs<ExtArgs>>): Prisma.Prisma__RecentlyOpenedClient<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Create many RecentlyOpeneds.
+     * @param {RecentlyOpenedCreateManyArgs} args - Arguments to create many RecentlyOpeneds.
+     * @example
+     * // Create many RecentlyOpeneds
+     * const recentlyOpened = await prisma.recentlyOpened.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     */
+    createMany<T extends RecentlyOpenedCreateManyArgs>(args?: Prisma.SelectSubset<T, RecentlyOpenedCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
+    /**
+     * Create many RecentlyOpeneds and returns the data saved in the database.
+     * @param {RecentlyOpenedCreateManyAndReturnArgs} args - Arguments to create many RecentlyOpeneds.
+     * @example
+     * // Create many RecentlyOpeneds
+     * const recentlyOpened = await prisma.recentlyOpened.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     * // Create many RecentlyOpeneds and only return the `id`
+     * const recentlyOpenedWithIdOnly = await prisma.recentlyOpened.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     *
+     */
+    createManyAndReturn<T extends RecentlyOpenedCreateManyAndReturnArgs>(args?: Prisma.SelectSubset<T, RecentlyOpenedCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>;
+    /**
+     * Delete a RecentlyOpened.
+     * @param {RecentlyOpenedDeleteArgs} args - Arguments to delete one RecentlyOpened.
+     * @example
+     * // Delete one RecentlyOpened
+     * const RecentlyOpened = await prisma.recentlyOpened.delete({
+     *   where: {
+     *     // ... filter to delete one RecentlyOpened
+     *   }
+     * })
+     *
+     */
+    delete<T extends RecentlyOpenedDeleteArgs>(args: Prisma.SelectSubset<T, RecentlyOpenedDeleteArgs<ExtArgs>>): Prisma.Prisma__RecentlyOpenedClient<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Update one RecentlyOpened.
+     * @param {RecentlyOpenedUpdateArgs} args - Arguments to update one RecentlyOpened.
+     * @example
+     * // Update one RecentlyOpened
+     * const recentlyOpened = await prisma.recentlyOpened.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    update<T extends RecentlyOpenedUpdateArgs>(args: Prisma.SelectSubset<T, RecentlyOpenedUpdateArgs<ExtArgs>>): Prisma.Prisma__RecentlyOpenedClient<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Delete zero or more RecentlyOpeneds.
+     * @param {RecentlyOpenedDeleteManyArgs} args - Arguments to filter RecentlyOpeneds to delete.
+     * @example
+     * // Delete a few RecentlyOpeneds
+     * const { count } = await prisma.recentlyOpened.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     *
+     */
+    deleteMany<T extends RecentlyOpenedDeleteManyArgs>(args?: Prisma.SelectSubset<T, RecentlyOpenedDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
+    /**
+     * Update zero or more RecentlyOpeneds.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecentlyOpenedUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RecentlyOpeneds
+     * const recentlyOpened = await prisma.recentlyOpened.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    updateMany<T extends RecentlyOpenedUpdateManyArgs>(args: Prisma.SelectSubset<T, RecentlyOpenedUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<Prisma.BatchPayload>;
+    /**
+     * Update zero or more RecentlyOpeneds and returns the data updated in the database.
+     * @param {RecentlyOpenedUpdateManyAndReturnArgs} args - Arguments to update many RecentlyOpeneds.
+     * @example
+     * // Update many RecentlyOpeneds
+     * const recentlyOpened = await prisma.recentlyOpened.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     * // Update zero or more RecentlyOpeneds and only return the `id`
+     * const recentlyOpenedWithIdOnly = await prisma.recentlyOpened.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     *
+     */
+    updateManyAndReturn<T extends RecentlyOpenedUpdateManyAndReturnArgs>(args: Prisma.SelectSubset<T, RecentlyOpenedUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>;
+    /**
+     * Create or update one RecentlyOpened.
+     * @param {RecentlyOpenedUpsertArgs} args - Arguments to update or create a RecentlyOpened.
+     * @example
+     * // Update or create a RecentlyOpened
+     * const recentlyOpened = await prisma.recentlyOpened.upsert({
+     *   create: {
+     *     // ... data to create a RecentlyOpened
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RecentlyOpened we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RecentlyOpenedUpsertArgs>(args: Prisma.SelectSubset<T, RecentlyOpenedUpsertArgs<ExtArgs>>): Prisma.Prisma__RecentlyOpenedClient<runtime.Types.Result.GetResult<Prisma.$RecentlyOpenedPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Count the number of RecentlyOpeneds.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecentlyOpenedCountArgs} args - Arguments to filter RecentlyOpeneds to count.
+     * @example
+     * // Count the number of RecentlyOpeneds
+     * const count = await prisma.recentlyOpened.count({
+     *   where: {
+     *     // ... the filter for the RecentlyOpeneds we want to count
+     *   }
+     * })
+    **/
+    count<T extends RecentlyOpenedCountArgs>(args?: Prisma.Subset<T, RecentlyOpenedCountArgs>): Prisma.PrismaPromise<T extends runtime.Types.Utils.Record<'select', any> ? T['select'] extends true ? number : Prisma.GetScalarType<T['select'], RecentlyOpenedCountAggregateOutputType> : number>;
+    /**
+     * Allows you to perform aggregations operations on a RecentlyOpened.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecentlyOpenedAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RecentlyOpenedAggregateArgs>(args: Prisma.Subset<T, RecentlyOpenedAggregateArgs>): Prisma.PrismaPromise<GetRecentlyOpenedAggregateType<T>>;
+    /**
+     * Group by RecentlyOpened.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RecentlyOpenedGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     *
+    **/
+    groupBy<T extends RecentlyOpenedGroupByArgs, HasSelectOrTake extends Prisma.Or<Prisma.Extends<'skip', Prisma.Keys<T>>, Prisma.Extends<'take', Prisma.Keys<T>>>, OrderByArg extends Prisma.True extends HasSelectOrTake ? {
+        orderBy: RecentlyOpenedGroupByArgs['orderBy'];
+    } : {
+        orderBy?: RecentlyOpenedGroupByArgs['orderBy'];
+    }, OrderFields extends Prisma.ExcludeUnderscoreKeys<Prisma.Keys<Prisma.MaybeTupleToUnion<T['orderBy']>>>, ByFields extends Prisma.MaybeTupleToUnion<T['by']>, ByValid extends Prisma.Has<ByFields, OrderFields>, HavingFields extends Prisma.GetHavingFields<T['having']>, HavingValid extends Prisma.Has<ByFields, HavingFields>, ByEmpty extends T['by'] extends never[] ? Prisma.True : Prisma.False, InputErrors extends ByEmpty extends Prisma.True ? `Error: "by" must not be empty.` : HavingValid extends Prisma.False ? {
+        [P in HavingFields]: P extends ByFields ? never : P extends string ? `Error: Field "${P}" used in "having" needs to be provided in "by".` : [
+            Error,
+            'Field ',
+            P,
+            ` in "having" needs to be provided in "by"`
+        ];
+    }[HavingFields] : 'take' extends Prisma.Keys<T> ? 'orderBy' extends Prisma.Keys<T> ? ByValid extends Prisma.True ? {} : {
+        [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+    }[OrderFields] : 'Error: If you provide "take", you also need to provide "orderBy"' : 'skip' extends Prisma.Keys<T> ? 'orderBy' extends Prisma.Keys<T> ? ByValid extends Prisma.True ? {} : {
+        [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+    }[OrderFields] : 'Error: If you provide "skip", you also need to provide "orderBy"' : ByValid extends Prisma.True ? {} : {
+        [P in OrderFields]: P extends ByFields ? never : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+    }[OrderFields]>(args: Prisma.SubsetIntersection<T, RecentlyOpenedGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRecentlyOpenedGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>;
+    /**
+     * Fields of the RecentlyOpened model
+     */
+    readonly fields: RecentlyOpenedFieldRefs;
+}
+/**
+ * The delegate class that acts as a "Promise-like" for RecentlyOpened.
+ * Why is this prefixed with `Prisma__`?
+ * Because we want to prevent naming conflicts as mentioned in
+ * https://github.com/prisma/prisma-client-js/issues/707
+ */
+export interface Prisma__RecentlyOpenedClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise";
+    user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>;
+    document<T extends Prisma.DocumentDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DocumentDefaultArgs<ExtArgs>>): Prisma.Prisma__DocumentClient<runtime.Types.Result.GetResult<Prisma.$DocumentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>;
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): runtime.Types.Utils.JsPromise<TResult1 | TResult2>;
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): runtime.Types.Utils.JsPromise<T | TResult>;
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): runtime.Types.Utils.JsPromise<T>;
+}
+/**
+ * Fields of the RecentlyOpened model
+ */
+export interface RecentlyOpenedFieldRefs {
+    readonly id: Prisma.FieldRef<"RecentlyOpened", 'String'>;
+    readonly userId: Prisma.FieldRef<"RecentlyOpened", 'String'>;
+    readonly documentId: Prisma.FieldRef<"RecentlyOpened", 'String'>;
+    readonly openedAt: Prisma.FieldRef<"RecentlyOpened", 'DateTime'>;
+}
+/**
+ * RecentlyOpened findUnique
+ */
+export type RecentlyOpenedFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedInclude<ExtArgs> | null;
+    /**
+     * Filter, which RecentlyOpened to fetch.
+     */
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+};
+/**
+ * RecentlyOpened findUniqueOrThrow
+ */
+export type RecentlyOpenedFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedInclude<ExtArgs> | null;
+    /**
+     * Filter, which RecentlyOpened to fetch.
+     */
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+};
+/**
+ * RecentlyOpened findFirst
+ */
+export type RecentlyOpenedFindFirstArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedInclude<ExtArgs> | null;
+    /**
+     * Filter, which RecentlyOpened to fetch.
+     */
+    where?: Prisma.RecentlyOpenedWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of RecentlyOpeneds to fetch.
+     */
+    orderBy?: Prisma.RecentlyOpenedOrderByWithRelationInput | Prisma.RecentlyOpenedOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for RecentlyOpeneds.
+     */
+    cursor?: Prisma.RecentlyOpenedWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` RecentlyOpeneds from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` RecentlyOpeneds.
+     */
+    skip?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of RecentlyOpeneds.
+     */
+    distinct?: Prisma.RecentlyOpenedScalarFieldEnum | Prisma.RecentlyOpenedScalarFieldEnum[];
+};
+/**
+ * RecentlyOpened findFirstOrThrow
+ */
+export type RecentlyOpenedFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedInclude<ExtArgs> | null;
+    /**
+     * Filter, which RecentlyOpened to fetch.
+     */
+    where?: Prisma.RecentlyOpenedWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of RecentlyOpeneds to fetch.
+     */
+    orderBy?: Prisma.RecentlyOpenedOrderByWithRelationInput | Prisma.RecentlyOpenedOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for RecentlyOpeneds.
+     */
+    cursor?: Prisma.RecentlyOpenedWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` RecentlyOpeneds from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` RecentlyOpeneds.
+     */
+    skip?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of RecentlyOpeneds.
+     */
+    distinct?: Prisma.RecentlyOpenedScalarFieldEnum | Prisma.RecentlyOpenedScalarFieldEnum[];
+};
+/**
+ * RecentlyOpened findMany
+ */
+export type RecentlyOpenedFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedInclude<ExtArgs> | null;
+    /**
+     * Filter, which RecentlyOpeneds to fetch.
+     */
+    where?: Prisma.RecentlyOpenedWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of RecentlyOpeneds to fetch.
+     */
+    orderBy?: Prisma.RecentlyOpenedOrderByWithRelationInput | Prisma.RecentlyOpenedOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for listing RecentlyOpeneds.
+     */
+    cursor?: Prisma.RecentlyOpenedWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` RecentlyOpeneds from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` RecentlyOpeneds.
+     */
+    skip?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of RecentlyOpeneds.
+     */
+    distinct?: Prisma.RecentlyOpenedScalarFieldEnum | Prisma.RecentlyOpenedScalarFieldEnum[];
+};
+/**
+ * RecentlyOpened create
+ */
+export type RecentlyOpenedCreateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedInclude<ExtArgs> | null;
+    /**
+     * The data needed to create a RecentlyOpened.
+     */
+    data: Prisma.XOR<Prisma.RecentlyOpenedCreateInput, Prisma.RecentlyOpenedUncheckedCreateInput>;
+};
+/**
+ * RecentlyOpened createMany
+ */
+export type RecentlyOpenedCreateManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RecentlyOpeneds.
+     */
+    data: Prisma.RecentlyOpenedCreateManyInput | Prisma.RecentlyOpenedCreateManyInput[];
+    skipDuplicates?: boolean;
+};
+/**
+ * RecentlyOpened createManyAndReturn
+ */
+export type RecentlyOpenedCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelectCreateManyAndReturn<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * The data used to create many RecentlyOpeneds.
+     */
+    data: Prisma.RecentlyOpenedCreateManyInput | Prisma.RecentlyOpenedCreateManyInput[];
+    skipDuplicates?: boolean;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedIncludeCreateManyAndReturn<ExtArgs> | null;
+};
+/**
+ * RecentlyOpened update
+ */
+export type RecentlyOpenedUpdateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedInclude<ExtArgs> | null;
+    /**
+     * The data needed to update a RecentlyOpened.
+     */
+    data: Prisma.XOR<Prisma.RecentlyOpenedUpdateInput, Prisma.RecentlyOpenedUncheckedUpdateInput>;
+    /**
+     * Choose, which RecentlyOpened to update.
+     */
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+};
+/**
+ * RecentlyOpened updateMany
+ */
+export type RecentlyOpenedUpdateManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RecentlyOpeneds.
+     */
+    data: Prisma.XOR<Prisma.RecentlyOpenedUpdateManyMutationInput, Prisma.RecentlyOpenedUncheckedUpdateManyInput>;
+    /**
+     * Filter which RecentlyOpeneds to update
+     */
+    where?: Prisma.RecentlyOpenedWhereInput;
+    /**
+     * Limit how many RecentlyOpeneds to update.
+     */
+    limit?: number;
+};
+/**
+ * RecentlyOpened updateManyAndReturn
+ */
+export type RecentlyOpenedUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelectUpdateManyAndReturn<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * The data used to update RecentlyOpeneds.
+     */
+    data: Prisma.XOR<Prisma.RecentlyOpenedUpdateManyMutationInput, Prisma.RecentlyOpenedUncheckedUpdateManyInput>;
+    /**
+     * Filter which RecentlyOpeneds to update
+     */
+    where?: Prisma.RecentlyOpenedWhereInput;
+    /**
+     * Limit how many RecentlyOpeneds to update.
+     */
+    limit?: number;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedIncludeUpdateManyAndReturn<ExtArgs> | null;
+};
+/**
+ * RecentlyOpened upsert
+ */
+export type RecentlyOpenedUpsertArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedInclude<ExtArgs> | null;
+    /**
+     * The filter to search for the RecentlyOpened to update in case it exists.
+     */
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+    /**
+     * In case the RecentlyOpened found by the `where` argument doesn't exist, create a new RecentlyOpened with this data.
+     */
+    create: Prisma.XOR<Prisma.RecentlyOpenedCreateInput, Prisma.RecentlyOpenedUncheckedCreateInput>;
+    /**
+     * In case the RecentlyOpened was found with the provided `where` argument, update it with this data.
+     */
+    update: Prisma.XOR<Prisma.RecentlyOpenedUpdateInput, Prisma.RecentlyOpenedUncheckedUpdateInput>;
+};
+/**
+ * RecentlyOpened delete
+ */
+export type RecentlyOpenedDeleteArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedInclude<ExtArgs> | null;
+    /**
+     * Filter which RecentlyOpened to delete.
+     */
+    where: Prisma.RecentlyOpenedWhereUniqueInput;
+};
+/**
+ * RecentlyOpened deleteMany
+ */
+export type RecentlyOpenedDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Filter which RecentlyOpeneds to delete
+     */
+    where?: Prisma.RecentlyOpenedWhereInput;
+    /**
+     * Limit how many RecentlyOpeneds to delete.
+     */
+    limit?: number;
+};
+/**
+ * RecentlyOpened without action
+ */
+export type RecentlyOpenedDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RecentlyOpened
+     */
+    select?: Prisma.RecentlyOpenedSelect<ExtArgs> | null;
+    /**
+     * Omit specific fields from the RecentlyOpened
+     */
+    omit?: Prisma.RecentlyOpenedOmit<ExtArgs> | null;
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: Prisma.RecentlyOpenedInclude<ExtArgs> | null;
+};
+//# sourceMappingURL=RecentlyOpened.d.ts.map

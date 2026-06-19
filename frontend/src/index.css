@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 font-sans antialiased;
+}
+
+.collaboration-cursor__caret {
+  border-left: 2px solid;
+  margin-left: -1px;
+  margin-right: -1px;
+  pointer-events: none;
+  position: relative;
+  word-break: normal;
+}
+
+.collaboration-cursor__label {
+  border-radius: 4px 4px 4px 0;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  left: -1px;
+  line-height: normal;
+  padding: 2px 6px;
+  position: absolute;
+  top: -1.4em;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ProseMirror {
+  outline: none;
+  min-height: calc(100vh - 200px);
+  padding: 2rem 3rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.ProseMirror h1 { @apply text-3xl font-bold mb-4; }
+.ProseMirror h2 { @apply text-2xl font-semibold mb-3; }
+.ProseMirror h3 { @apply text-xl font-semibold mb-2; }
+.ProseMirror blockquote { @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4; }
+.ProseMirror pre { @apply bg-gray-900 text-gray-100 rounded-lg p-4 my-4 overflow-x-auto font-mono text-sm; }
+.ProseMirror code { @apply bg-gray-100 rounded px-1 py-0.5 font-mono text-sm; }
+.ProseMirror pre code { @apply bg-transparent p-0; }
+.ProseMirror table { @apply border-collapse w-full my-4; }
+.ProseMirror th, .ProseMirror td { @apply border border-gray-300 px-3 py-2; }
+.ProseMirror th { @apply bg-gray-100 font-semibold; }
+.ProseMirror hr { @apply my-6 border-gray-300; }
+.ProseMirror ul { @apply list-disc pl-6 my-2; }
+.ProseMirror ol { @apply list-decimal pl-6 my-2; }
+.ProseMirror a { @apply text-brand-600 underline; }
+.ProseMirror img { @apply max-w-full rounded-lg my-4; }
+
+.pdf-embed-wrapper {
+  @apply my-6 rounded-xl border border-gray-200 overflow-hidden bg-gray-50 shadow-sm;
+}
+
+.pdf-embed-header {
+  @apply flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-200 text-sm font-medium text-gray-700;
+}
+
+.pdf-embed-header a {
+  @apply text-brand-600 hover:text-brand-700 text-xs font-normal no-underline;
+}
+
+.pdf-embed-frame {
+  @apply w-full bg-white block;
+  min-height: 480px;
+}
+
+.diff-added { @apply bg-green-100 text-green-800; }
+.diff-removed { @apply bg-red-100 text-red-800 line-through; }
+.diff-modified { @apply bg-yellow-100 text-yellow-800; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}

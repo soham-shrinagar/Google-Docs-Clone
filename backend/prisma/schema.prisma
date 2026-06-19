@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PermissionRole {
+  OWNER
+  EDITOR
+  COMMENTER
+  VIEWER
+}
+
+enum ActivityType {
+  CREATED
+  EDITED
+  RENAMED
+  SHARED
+  DELETED
+  RESTORED
+  JOINED
+  LEFT
+  COMMENTED
+}
+
+enum NotificationType {
+  USER_JOINED
+  USER_LEFT
+  DOCUMENT_SHARED
+  VERSION_RESTORED
+  CONNECTION_LOST
+  CONNECTION_RESTORED
+  CONFLICT_RESOLVED
+  DOCUMENT_SAVED
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  name          String
+  avatar        String?
+  googleId      String?  @unique
+  passwordHash  String?
+  color         String   @default("#3B82F6")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ownedDocuments    Document[]           @relation("DocumentOwner")
+  permissions       DocumentPermission[]
+  operations        DocumentOperation[]
+  versions          DocumentVersion[]
+  activeSessions    ActiveSession[]
+  presence          UserPresence[]
+  activities        ActivityLog[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  pinnedDocuments   PinnedDocument[]
+  recentlyOpened    RecentlyOpened[]
+
+  @@map("users")
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  title       String   @default("Untitled Document")
+  content     Bytes?
+  thumbnail   String?
+  ownerId     String
+  isPinned    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner           User                 @relation("DocumentOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  permissions     DocumentPermission[]
+  versions        DocumentVersion[]
+  snapshots       DocumentSnapshot[]
+  operations      DocumentOperation[]
+  activeSessions  ActiveSession[]
+  presence        UserPresence[]
+  activities      ActivityLog[]
+  notifications   Notification[]
+  pinnedBy        PinnedDocument[]
+  recentlyOpened  RecentlyOpened[]
+
+  @@index([ownerId])
+  @@index([updatedAt])
+  @@map("documents")
+}
+
+model DocumentPermission {
+  id         String         @id @default(uuid())
+  documentId String
+  userId     String
+  role       PermissionRole @default(VIEWER)
+  shareToken String?        @unique
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+  @@index([userId])
+  @@map("document_permissions")
+}
+
+model DocumentVersion {
+  id          String   @id @default(uuid())
+  documentId  String
+  userId      String
+  versionNum  Int
+  label       String?
+  description String?
+  snapshotId  String?
+  createdAt   DateTime @default(now())
+
+  document Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshot DocumentSnapshot? @relation(fields: [snapshotId], references: [id])
+
+  @@unique([documentId, versionNum])
+  @@index([documentId])
+  @@map("document_versions")
+}
+
+model DocumentSnapshot {
+  id         String   @id @default(uuid())
+  documentId String
+  data       Bytes
+  stateVector Bytes?
+  wordCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  document Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  versions DocumentVersion[]
+
+  @@index([documentId])
+  @@map("document_snapshots")
+}
+
+model DocumentOperation {
+  id           String   @id @default(uuid())
+  documentId   String
+  userId       String
+  operationId  String
+  operationType String
+  payload      Bytes
+  vectorClock  Json?
+  lamportTs    BigInt   @default(0)
+  clientId     String?
+  createdAt    DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt])
+  @@index([documentId, lamportTs])
+  @@map("document_operations")
+}
+
+model ActiveSession {
+  id         String   @id @default(uuid())
+  userId     String
+  documentId String?
+  socketId   String   @unique
+  ipAddress  String?
+  userAgent  String?
+  connectedAt DateTime @default(now())
+  lastActive DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([documentId])
+  @@map("active_sessions")
+}
+
+model UserPresence {
+  id         String   @id @default(uuid())
+  userId     String
+  documentId String
+  cursorPos  Json?
+  selection  Json?
+  isTyping   Boolean  @default(false)
+  isOnline   Boolean  @default(true)
+  lastActive DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentId])
+  @@index([documentId])
+  @@map("user_presence")
+}
+
+model ActivityLog {
+  id         String       @id @default(uuid())
+  userId     String
+  documentId String?
+  type       ActivityType
+  metadata   Json?
+  createdAt  DateTime     @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([documentId, createdAt])
+  @@index([userId])
+  @@map("activity_logs")
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String
+  documentId String?
+  type       NotificationType
+  title      String
+  message    String
+  isRead     Boolean          @default(false)
+  metadata   Json?
+  createdAt  DateTime         @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  resource  String
+  resourceId String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model PinnedDocument {
+  id         String   @id @default(uuid())
+  userId     String
+  documentId String
+  pinnedAt   DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentId])
+  @@map("pinned_documents")
+}
+
+model RecentlyOpened {
+  id         String   @id @default(uuid())
+  userId     String
+  documentId String
+  openedAt   DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentId])
+  @@index([userId, openedAt])
+  @@map("recently_opened")
+}

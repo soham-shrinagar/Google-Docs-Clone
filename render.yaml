@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm install && npm run build -w backend",
+  "startCommand": "npm run start -w backend",
+  "healthCheckPath": "/health"
+}

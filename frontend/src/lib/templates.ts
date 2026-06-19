@@ -5,6 +5,7 @@ export interface DocumentTemplate {
   category: string;
   thumbnail: string;
   title: string;
+  html?: string;
 }
 
 export const TEMPLATE_CATEGORIES = ['All', 'General', 'Work', 'Career', 'Content', 'Marketing', 'Business', 'Creative'];

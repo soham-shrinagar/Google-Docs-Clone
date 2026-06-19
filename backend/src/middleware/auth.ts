@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../lib/jwt.js';
 import { prisma } from '../lib/prisma.js';
+import { config } from '../config/index.js';
+import { getDbErrorMessage, isTransientDbError } from '../lib/dbErrors.js';
 
 export interface AuthUser {
   id: string;
@@ -39,7 +41,20 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
 
     req.authUser = user;
     next();
-  } catch {
+  } catch (err) {
+    if (isTransientDbError(err)) {
+      if (config.nodeEnv === 'development') {
+        console.error('Database unreachable:', getDbErrorMessage(err));
+      }
+      res.status(503).json({
+        error: 'Database temporarily unreachable. If you use WSL, try PowerShell instead or fix WSL DNS.',
+      });
+      return;
+    }
+
+    if (config.nodeEnv === 'development') {
+      console.error('Auth middleware error:', getDbErrorMessage(err));
+    }
     res.status(401).json({ error: 'Invalid token' });
   }
 }

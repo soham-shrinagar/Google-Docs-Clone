@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FileText, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../hooks/useApi';
 import { useAuthStore } from '../store';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/dashboard';
   const { loginMutation, registerMutation } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
@@ -22,7 +24,7 @@ export function LoginPage() {
       } else {
         await loginMutation.mutateAsync({ email, password });
       }
-      navigate('/dashboard');
+      navigate(redirect);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
     }

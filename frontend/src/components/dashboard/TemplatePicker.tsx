@@ -119,10 +119,19 @@ function TemplateCard({
       className="group text-left bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-brand-300 transition-all disabled:opacity-50"
     >
       <div
-        className="h-28 p-3 flex items-center justify-center"
+        className="h-32 relative overflow-hidden border-b border-gray-100"
         style={{ background: template.thumbnail }}
       >
-        <FileText size={32} className="text-gray-400 group-hover:text-brand-600 transition-colors" />
+        {template.html && template.id !== 'blank' ? (
+          <div
+            className="absolute inset-2 bg-white/90 rounded-lg p-2 text-[6px] leading-tight text-gray-600 overflow-hidden pointer-events-none shadow-inner"
+            dangerouslySetInnerHTML={{ __html: template.html }}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <FileText size={32} className="text-gray-400 group-hover:text-brand-600 transition-colors" />
+          </div>
+        )}
       </div>
       <div className="p-3">
         <p className="font-semibold text-sm text-gray-900 group-hover:text-brand-600">{template.name}</p>

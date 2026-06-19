@@ -78,8 +78,11 @@ export function useDocument(id: string) {
 export function useCreateDocument() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (options?: { title?: string; templateId?: string }) =>
-      api.createDocument(options),
+    mutationFn: (options?: {
+      title?: string;
+      templateId?: string;
+      seedContent?: import('../components/editor/PdfEmbed').TipTapContent | null;
+    }) => api.createDocument(options),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
   });
 }

@@ -8,8 +8,6 @@ import { useDocuments, useRecentDocuments, useCreateDocument, useDeleteDocument 
 import { useDashboardStore } from '../store';
 import { api } from '../lib/api';
 import { buildUploadInitialContent } from '../components/editor/FileUploadButton';
-import { DOC_INIT_KEY } from '../components/editor/PdfEmbed';
-import type { TipTapContent } from '../components/editor/PdfEmbed';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -21,25 +19,19 @@ export function DashboardPage() {
   const deleteDoc = useDeleteDocument();
   const [creating, setCreating] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
-
-  const openDocument = (documentId: string, initialContent?: TipTapContent | null) => {
-    if (initialContent) {
-      sessionStorage.setItem(DOC_INIT_KEY(documentId), JSON.stringify(initialContent));
-    }
-    navigate(`/document/${documentId}`);
-  };
+  const [error, setError] = useState('');
 
   const handleCreate = async (templateId?: string) => {
     setCreating(true);
+    setError('');
     try {
-      const { document, initialHtml } = await createDoc.mutateAsync(
+      const { document } = await createDoc.mutateAsync(
         templateId ? { templateId } : undefined
       );
       setShowTemplates(false);
-      if (initialHtml) {
-        sessionStorage.setItem(`doc-init-html-${document.id}`, initialHtml);
-      }
       navigate(`/document/${document.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create document');
     } finally {
       setCreating(false);
     }
@@ -47,14 +39,15 @@ export function DashboardPage() {
 
   const handleUpload = async (file: File) => {
     setCreating(true);
+    setError('');
     try {
-      const initialContent = await buildUploadInitialContent(file);
+      const seedContent = await buildUploadInitialContent(file);
       const title = file.name.replace(/\.[^.]+$/, '') || 'Uploaded Document';
-      const { document } = await createDoc.mutateAsync({ title });
+      const { document } = await createDoc.mutateAsync({ title, seedContent });
       setShowTemplates(false);
-      openDocument(document.id, initialContent);
+      navigate(`/document/${document.id}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setCreating(false);
     }
@@ -72,20 +65,20 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100/80">
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Documents</h1>
-            <p className="text-gray-500 mt-1">Real-time collaborative editing with CRDT synchronization</p>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">My Documents</h1>
+            <p className="text-gray-500 mt-1">Create from templates, upload files, and collaborate in real time</p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setShowTemplates(true)}
               disabled={creating}
-              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl font-medium hover:shadow-md hover:border-brand-200 transition-all disabled:opacity-50"
             >
               <LayoutTemplate size={20} />
               Templates
@@ -93,13 +86,17 @@ export function DashboardPage() {
             <button
               onClick={() => handleCreate()}
               disabled={creating}
-              className="flex items-center gap-2 bg-brand-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-brand-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 bg-brand-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-brand-700 shadow-sm hover:shadow transition-all disabled:opacity-50"
             >
               <Plus size={20} />
-              {creating ? 'Creating...' : 'Blank Doc'}
+              {creating ? 'Creating…' : 'Blank Doc'}
             </button>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100">{error}</div>
+        )}
 
         {recentDocs && recentDocs.length > 0 && (
           <section className="mb-8">
@@ -109,7 +106,7 @@ export function DashboardPage() {
                 <button
                   key={doc.id}
                   onClick={() => navigate(`/document/${doc.id}`)}
-                  className="flex-shrink-0 bg-white border border-gray-200 rounded-lg px-4 py-2 hover:border-brand-300 transition-colors"
+                  className="flex-shrink-0 bg-white border border-gray-200 rounded-xl px-4 py-2.5 hover:border-brand-300 hover:shadow-sm transition-all"
                 >
                   <p className="text-sm font-medium truncate max-w-[150px]">{doc.title}</p>
                 </button>
@@ -126,14 +123,14 @@ export function DashboardPage() {
               placeholder="Search documents..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-sm"
             />
           </div>
 
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'updatedAt' | 'createdAt' | 'title')}
-            className="px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm"
+            className="px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm shadow-sm"
           >
             <option value="updatedAt">Last Modified</option>
             <option value="createdAt">Created</option>
@@ -142,14 +139,14 @@ export function DashboardPage() {
 
           <button
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="p-2.5 border border-gray-200 rounded-xl bg-white hover:bg-gray-50"
+            className="p-2.5 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 shadow-sm"
           >
             <ArrowUpDown size={18} />
           </button>
 
           <button
             onClick={() => setFilterPinned(!filterPinned)}
-            className={`flex items-center gap-1.5 px-3 py-2.5 border rounded-xl text-sm ${
+            className={`flex items-center gap-1.5 px-3 py-2.5 border rounded-xl text-sm shadow-sm ${
               filterPinned ? 'bg-brand-50 border-brand-300 text-brand-700' : 'bg-white border-gray-200'
             }`}
           >
@@ -175,7 +172,7 @@ export function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
+          <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm">
             <LayoutTemplate size={48} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500 mb-4">No documents yet. Pick a template or upload a file to get started.</p>
             <button

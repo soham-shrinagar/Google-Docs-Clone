@@ -4,6 +4,11 @@ interface RequestOptions extends RequestInit {
   params?: Record<string, string>;
 }
 
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function request<T>(baseUrl: string, endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { params, ...init } = options;
   let url = `${baseUrl}${endpoint}`;
@@ -16,6 +21,7 @@ async function request<T>(baseUrl: string, endpoint: string, options: RequestOpt
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders(),
       ...init.headers,
     },
   });
@@ -59,15 +65,15 @@ export const api = {
     return request<{ documents: import('../types').Document[] }>(API_URL, '/api/documents/recent');
   },
 
-  createDocument(options?: { title?: string; templateId?: string }) {
-    return request<{ document: import('../types').Document; initialHtml: string | null }>(
-      API_URL,
-      '/api/documents',
-      {
-        method: 'POST',
-        body: JSON.stringify(options ?? {}),
-      }
-    );
+  createDocument(options?: {
+    title?: string;
+    templateId?: string;
+    seedContent?: import('../components/editor/PdfEmbed').TipTapContent | null;
+  }) {
+    return request<{ document: import('../types').Document }>(API_URL, '/api/documents', {
+      method: 'POST',
+      body: JSON.stringify(options ?? {}),
+    });
   },
 
   getTemplates() {
@@ -83,6 +89,7 @@ export const api = {
     const res = await fetch(`${API_URL}/api/uploads`, {
       method: 'POST',
       credentials: 'include',
+      headers: authHeaders(),
       body: formData,
     });
     if (!res.ok) {
@@ -118,6 +125,32 @@ export const api = {
     return request(API_URL, `/api/documents/${id}/share`, {
       method: 'POST',
       body: JSON.stringify({ email, role }),
+    });
+  },
+
+  createShareLink(id: string) {
+    return request<{ token: string; url: string }>(API_URL, `/api/documents/${id}/share-link`, {
+      method: 'POST',
+    });
+  },
+
+  getCollaborators(id: string) {
+    return request<{
+      collaborators: Array<{
+        id: string;
+        name: string;
+        email: string;
+        avatar: string | null;
+        color: string;
+        role: string;
+      }>;
+      shareToken: string | null;
+    }>(API_URL, `/api/documents/${id}/collaborators`);
+  },
+
+  joinByShareToken(token: string) {
+    return request<{ document: import('../types').Document }>(API_URL, `/api/documents/join/${token}`, {
+      method: 'POST',
     });
   },
 

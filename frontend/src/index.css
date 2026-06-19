@@ -40,9 +40,25 @@ body {
 .ProseMirror {
   outline: none;
   min-height: calc(100vh - 200px);
-  padding: 2rem 3rem;
-  max-width: 900px;
+  padding: 3rem 4rem 4rem;
+  max-width: none;
+  margin: 0;
+}
+
+.editor-canvas {
+  background: #f0f2f5;
+  flex: 1;
+  padding: 2rem 1rem 5rem;
+}
+
+.editor-paper {
+  max-width: 816px;
+  min-height: 1056px;
   margin: 0 auto;
+  background: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 24px rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {

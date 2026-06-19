@@ -13,9 +13,12 @@ import { VersionHistoryPanel } from '../components/editor/VersionHistoryPanel';
 import { CrdtInternalsPanel } from '../components/editor/CrdtInternalsPanel';
 import { NetworkSimulatorPanel } from '../components/editor/NetworkSimulatorPanel';
 import { AnalyticsPanel } from '../components/editor/AnalyticsPanel';
+import { SharePanel } from '../components/editor/SharePanel';
 import { useDocument, useVersionHistory } from '../hooks/useApi';
 import { useAuthStore, useEditorStore } from '../store';
 import { api } from '../lib/api';
+import { seedYDocFromTipTap, clearIndexedDb } from '../lib/seedDocument';
+import type { TipTapContent } from '../components/editor/PdfEmbed';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { IndexeddbPersistence } from 'y-indexeddb';
@@ -30,7 +33,6 @@ export function EditorPage() {
   const { data: versionHistory } = useVersionHistory(id!);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [title, setTitle] = useState('');
-  const [shareEmail, setShareEmail] = useState('');
   const [showShare, setShowShare] = useState(false);
 
   const [ydoc, setYdoc] = useState<Y.Doc | null>(null);
@@ -42,6 +44,8 @@ export function EditorPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const persistenceRef = useRef<IndexeddbPersistenceType | null>(null);
+  const providerRef = useRef<WebsocketProvider | null>(null);
+  const ydocRef = useRef<Y.Doc | null>(null);
 
   const {
     showCrdtInternals,
@@ -57,7 +61,6 @@ export function EditorPage() {
     setPresenceUsers,
     setConnectionStatus,
     setSyncStatus,
-    addCrdtEvent,
   } = useEditorStore();
 
   const handleContentChange = useCallback(() => {
@@ -75,88 +78,130 @@ export function EditorPage() {
   }, [document]);
 
   useEffect(() => {
-    if (!id || !user) return;
+    if (!id || !user || !document) return;
 
-    const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3001`;
-    const token = localStorage.getItem('token') || '';
-    const doc = new Y.Doc();
+    let cancelled = false;
+    const idbName = `collabdocs-${id}`;
 
-    const persistence = new IndexeddbPersistence(`collabdocs-${id}`, doc);
-    persistenceRef.current = persistence;
-    persistence.on('synced', () => setLocalReady(true));
+    async function connect() {
+      const needsSeed = document!.operationCount === 0 && document!.seedContent;
 
-    const wsBase = `${WS_URL}/ws`;
-    const prov = new WebsocketProvider(wsBase, `${id}?token=${encodeURIComponent(token)}`, doc);
-    const aw = prov.awareness;
-
-    aw.setLocalStateField('user', { id: user.id, name: user.name, color: user.color });
-
-    prov.on('status', ({ status }: { status: string }) => {
-      if (status === 'connected') {
-        setConnectionStatus('connected');
-        setSyncStatus('Saving...');
-      } else if (status === 'connecting') {
-        setConnectionStatus('connecting');
-        setSyncStatus('Connecting...');
-        setSynced(false);
-      } else {
-        setConnectionStatus('disconnected');
-        setSyncStatus('Saved locally — will sync when online');
+      if (needsSeed) {
+        await clearIndexedDb(idbName);
       }
-    });
 
-    prov.on('sync', (isSynced: boolean) => {
-      setSynced(isSynced);
-      if (isSynced) {
-        setConnectionStatus('connected');
-        setSyncStatus('All changes saved');
-        setLastSaved(new Date());
-        setIsSaving(false);
+      const doc = new Y.Doc();
+
+      if (needsSeed && document!.seedContent) {
+        try {
+          seedYDocFromTipTap(doc, document!.seedContent as TipTapContent);
+        } catch (err) {
+          console.error('Failed to seed template content:', err);
+        }
       }
+
+      if (cancelled) {
+        doc.destroy();
+        return;
+      }
+
+      const persistence = new IndexeddbPersistence(idbName, doc);
+      persistenceRef.current = persistence;
+      persistence.on('synced', () => setLocalReady(true));
+
+      const wsHost = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3001`;
+      const token = localStorage.getItem('token') || '';
+      const prov = new WebsocketProvider(`${wsHost}/ws`, `${id}?token=${encodeURIComponent(token)}`, doc);
+      const aw = prov.awareness;
+
+      aw.setLocalStateField('user', { id: user!.id, name: user!.name, color: user!.color });
+
+      prov.on('status', ({ status }: { status: string }) => {
+        if (status === 'connected') {
+          setConnectionStatus('connected');
+          setSyncStatus('Saving...');
+        } else if (status === 'connecting') {
+          setConnectionStatus('connecting');
+          setSyncStatus('Connecting...');
+          setSynced(false);
+        } else {
+          setConnectionStatus('disconnected');
+          setSyncStatus('Saved locally — will sync when online');
+        }
+      });
+
+      prov.on('sync', (isSynced: boolean) => {
+        setSynced(isSynced);
+        if (isSynced) {
+          setConnectionStatus('connected');
+          setSyncStatus('All changes saved');
+          setLastSaved(new Date());
+          setIsSaving(false);
+        }
+      });
+
+      doc.on('update', () => handleContentChange());
+
+      setYdoc(doc);
+      setProvider(prov);
+      setAwareness(aw);
+      providerRef.current = prov;
+      ydocRef.current = doc;
+
+      const updatePresence = () => {
+        const states = aw.getStates();
+        const users = [...states.values()]
+          .filter((s) => s.user)
+          .map((s) => ({
+            userId: s.user.id,
+            name: s.user.name,
+            avatar: null,
+            color: s.user.color,
+            isTyping: false,
+            isOnline: true,
+            lastActive: new Date().toISOString(),
+          }));
+        setPresenceUsers(users);
+      };
+
+      aw.on('change', updatePresence);
+      updatePresence();
+
+      const presenceInterval = setInterval(async () => {
+        try {
+          const { presence } = await api.getPresence(id!);
+          setPresenceUsers(presence);
+        } catch { /* offline */ }
+      }, 5000);
+
+      return () => {
+        clearInterval(presenceInterval);
+      };
+    }
+
+    let cleanupPresence: (() => void) | undefined;
+
+    connect().then((cleanup) => {
+      cleanupPresence = cleanup;
     });
-
-    doc.on('update', () => {
-      handleContentChange();
-    });
-
-    setYdoc(doc);
-    setProvider(prov);
-    setAwareness(aw);
-
-    const updatePresence = () => {
-      const states = aw.getStates();
-      const users = [...states.values()]
-        .filter((s) => s.user)
-        .map((s) => ({
-          userId: s.user.id,
-          name: s.user.name,
-          avatar: null,
-          color: s.user.color,
-          isTyping: false,
-          isOnline: true,
-          lastActive: new Date().toISOString(),
-        }));
-      setPresenceUsers(users);
-    };
-
-    aw.on('change', updatePresence);
-    updatePresence();
-
-    const presenceInterval = setInterval(async () => {
-      try {
-        const { presence } = await api.getPresence(id);
-        setPresenceUsers(presence);
-      } catch { /* offline */ }
-    }, 5000);
 
     return () => {
-      clearInterval(presenceInterval);
+      cancelled = true;
+      cleanupPresence?.();
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      persistence.destroy();
-      prov.destroy();
-      doc.destroy();
+      persistenceRef.current?.destroy();
+      providerRef.current?.destroy();
+      ydocRef.current?.destroy();
+      persistenceRef.current = null;
+      providerRef.current = null;
+      ydocRef.current = null;
+      setYdoc(null);
+      setProvider(null);
+      setAwareness(null);
+      setSynced(false);
     };
-  }, [id, user, setPresenceUsers, setConnectionStatus, setSyncStatus, addCrdtEvent, handleContentChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user?.id, document?.id, document?.operationCount]);
 
   useEffect(() => {
     if (!provider) return;
@@ -171,14 +216,6 @@ export function EditorPage() {
     if (document && title !== document.title) {
       await api.updateDocument(id!, { title });
     }
-  };
-
-  const handleShare = async () => {
-    if (!shareEmail) return;
-    await api.shareDocument(id!, shareEmail, 'EDITOR');
-    setShareEmail('');
-    setShowShare(false);
-    alert('Document shared!');
   };
 
   const handleRestore = async (versionId: string) => {
@@ -197,20 +234,20 @@ export function EditorPage() {
 
   if (!user) return null;
 
-  if (isLoading) {
+  if (isLoading || !document) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#f0f2f5]">
         <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <header className="border-b border-gray-200 bg-white sticky top-0 z-20">
-        <div className="flex items-center justify-between px-4 py-2">
+    <div className="min-h-screen bg-[#f0f2f5] flex flex-col">
+      <header className="border-b border-gray-200/80 bg-white sticky top-0 z-20 shadow-sm">
+        <div className="flex items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/dashboard')} className="p-2 hover:bg-gray-100 rounded-lg">
+            <button onClick={() => navigate('/dashboard')} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <ArrowLeft size={20} />
             </button>
             <input
@@ -218,7 +255,7 @@ export function EditorPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={handleTitleBlur}
-              className="text-lg font-semibold bg-transparent border-none outline-none focus:ring-0 min-w-[200px]"
+              className="text-lg font-semibold bg-transparent border-none outline-none focus:ring-0 min-w-[200px] text-gray-900"
             />
           </div>
 
@@ -241,25 +278,20 @@ export function EditorPage() {
             <button onClick={toggleAnalytics} className={`p-2 rounded-lg ${showAnalytics ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`} title="Analytics">
               <Activity size={18} />
             </button>
-            <button onClick={() => setShowShare(!showShare)} className="p-2 hover:bg-gray-100 rounded-lg" title="Share">
-              <Share2 size={18} />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowShare(!showShare)}
+                className={`p-2 rounded-lg transition-colors ${showShare ? 'bg-brand-50 text-brand-700' : 'hover:bg-gray-100'}`}
+                title="Share"
+              >
+                <Share2 size={18} />
+              </button>
+            </div>
           </div>
         </div>
 
-        {showShare && (
-          <div className="px-4 pb-3 flex gap-2">
-            <input
-              type="email"
-              placeholder="Collaborator email..."
-              value={shareEmail}
-              onChange={(e) => setShareEmail(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
-            />
-            <button onClick={handleShare} className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium">
-              Share as Editor
-            </button>
-          </div>
+        {showShare && id && (
+          <SharePanel documentId={id} onClose={() => setShowShare(false)} />
         )}
 
         <EditorToolbar editor={editor} />
@@ -272,14 +304,13 @@ export function EditorPage() {
             provider={provider}
             awareness={awareness}
             user={user}
-            documentId={id}
             synced={synced}
             onEditorReady={setEditor}
             onContentChange={handleContentChange}
           />
         </div>
         {showCrdtInternals && (
-          <div className="w-1/2">
+          <div className="w-1/2 bg-white">
             <CrdtInternalsPanel />
           </div>
         )}

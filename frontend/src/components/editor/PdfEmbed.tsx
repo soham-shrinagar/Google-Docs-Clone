@@ -108,3 +108,4 @@ export function buildImageContent(src: string, alt: string, docTitle?: string): 
 }
 
 export const DOC_INIT_KEY = (id: string) => `doc-init-content-${id}`;
+export const PENDING_INIT_KEY = (id: string) => `doc-pending-init-${id}`;

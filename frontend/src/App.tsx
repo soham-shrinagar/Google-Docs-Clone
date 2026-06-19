@@ -5,6 +5,7 @@ import { useAuth } from './hooks/useApi';
 import { LandingPage, LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EditorPage } from './pages/EditorPage';
+import { JoinPage } from './pages/JoinPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -38,6 +39,7 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/document/:id" element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
+      <Route path="/join/:token" element={<ProtectedRoute><JoinPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

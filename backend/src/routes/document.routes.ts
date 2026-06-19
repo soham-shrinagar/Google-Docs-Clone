@@ -42,11 +42,21 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     const body = z.object({
       title: z.string().optional(),
       templateId: z.string().optional(),
+      seedContent: z.record(z.unknown()).nullable().optional(),
     }).parse(req.body);
     const result = await documentService.create(req.authUser!.id, body);
     res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to create document' });
+  }
+});
+
+router.post('/join/:token', async (req: AuthRequest, res: Response) => {
+  try {
+    const document = await documentService.joinByShareToken(param(req.params.token), req.authUser!.id);
+    res.json({ document });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to join' });
   }
 });
 
@@ -83,12 +93,30 @@ router.post('/:id/share', requirePermission(PermissionRole.OWNER), async (req: A
   try {
     const { email, role } = z.object({
       email: z.string().email(),
-      role: z.nativeEnum(PermissionRole),
+      role: z.nativeEnum(PermissionRole).default(PermissionRole.EDITOR),
     }).parse(req.body);
     const permission = await documentService.share(param(req.params.id), req.authUser!.id, email, role);
     res.json({ permission });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : 'Share failed' });
+  }
+});
+
+router.post('/:id/share-link', requirePermission(PermissionRole.OWNER), async (req: AuthRequest, res: Response) => {
+  try {
+    const { token } = await documentService.createShareLink(param(req.params.id), req.authUser!.id);
+    res.json({ token, url: `/join/${token}` });
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : 'Failed to create link' });
+  }
+});
+
+router.get('/:id/collaborators', requirePermission(PermissionRole.VIEWER), async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await documentService.getCollaborators(param(req.params.id));
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get collaborators' });
   }
 });
 

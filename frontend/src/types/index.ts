@@ -16,6 +16,7 @@ export interface Document {
   owner: Pick<User, 'id' | 'name' | 'email' | 'avatar'>;
   collaboratorCount: number;
   operationCount: number;
+  seedContent?: Record<string, unknown> | null;
   permission: PermissionRole;
   isPinned: boolean;
   createdAt: string;

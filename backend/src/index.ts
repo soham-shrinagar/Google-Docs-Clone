@@ -4,7 +4,8 @@ import { parse } from 'url';
 import app from './app.js';
 import { config } from './config/index.js';
 import { crdtSyncService } from './services/crdt-sync.service.js';
-import { prisma } from './lib/prisma.js';
+import { initPrisma, prisma, verifyDatabaseConnection } from './lib/prisma.js';
+import { isTransientDbError, getDbErrorMessage } from './lib/dbErrors.js';
 
 const server = createServer(app);
 const wss = new WebSocketServer({ noServer: true });
@@ -52,12 +53,43 @@ wss.on('connection', (ws) => {
 
 wss.on('close', () => clearInterval(heartbeat));
 
-server.listen(config.port, () => {
-  console.log(`CollabDocs server running on port ${config.port}`);
-  console.log(`WebSocket endpoint: ws://localhost:${config.port}/ws`);
+async function main() {
+  try {
+    await initPrisma();
+  } catch (err) {
+    console.error('Database init failed:', getDbErrorMessage(err));
+    console.error('Fix WSL DNS: echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf');
+    console.error('Or set DATABASE_HOST=<neon-ipv4> in .env');
+    process.exit(1);
+  }
+
+  server.listen(config.port, async () => {
+    console.log(`CollabDocs server running on port ${config.port}`);
+    console.log(`WebSocket endpoint: ws://localhost:${config.port}/ws`);
+    try {
+      await verifyDatabaseConnection();
+      console.log('Database connected');
+    } catch (err) {
+      console.error('Database connection failed:', getDbErrorMessage(err));
+      if (isTransientDbError(err)) {
+        console.error('Try DATABASE_HOST=<neon-ipv4> in .env or run from PowerShell instead of WSL.');
+      }
+    }
+  });
+}
+
+main().catch((err) => {
+  console.error('Startup failed:', err);
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
+  if (isTransientDbError(reason)) {
+    if (config.nodeEnv === 'development') {
+      console.warn('Transient DB error (will retry):', getDbErrorMessage(reason));
+    }
+    return;
+  }
   console.error('Unhandled rejection:', reason);
 });
 

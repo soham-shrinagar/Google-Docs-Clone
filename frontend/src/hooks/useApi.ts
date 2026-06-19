@@ -1,20 +1,30 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store';
 import { useDashboardStore } from '../store';
 
 export function useAuth() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { setUser, logout: storeLogout } = useAuthStore();
 
   const meQuery = useQuery({
     queryKey: ['auth', 'me'],
     queryFn: async () => {
-      const { user } = await api.getMe();
-      setUser(user);
-      return user;
+      try {
+        const { user } = await api.getMe();
+        setUser(user);
+        return user;
+      } catch {
+        localStorage.removeItem('token');
+        storeLogout();
+        throw new Error('Not authenticated');
+      }
     },
     retry: false,
     staleTime: 5 * 60 * 1000,
+    enabled: !!localStorage.getItem('token'),
   });
 
   const loginMutation = useMutation({
@@ -34,9 +44,15 @@ export function useAuth() {
   });
 
   const logout = async () => {
-    await api.logout();
+    try {
+      await api.logout();
+    } catch {
+      // Clear local session even if token is expired or invalid
+    }
     localStorage.removeItem('token');
     storeLogout();
+    queryClient.clear();
+    navigate('/', { replace: true });
   };
 
   return { meQuery, loginMutation, registerMutation, logout };

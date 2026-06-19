@@ -1,8 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FileText, Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '../hooks/useApi';
-import { useAuthStore } from '../store';
+import { getGoogleAuthUrl } from '../lib/api';
+import { ThemeToggle } from '../components/layout/ThemeToggle';
+import { Logo } from '../components/layout/Logo';
+
+const OAUTH_ERRORS: Record<string, string> = {
+  oauth_failed: 'Google sign-in failed. Please try again.',
+  oauth_denied: 'Google sign-in was cancelled.',
+};
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -14,6 +21,13 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const oauthError = searchParams.get('error');
+    if (oauthError && OAUTH_ERRORS[oauthError]) {
+      setError(OAUTH_ERRORS[oauthError]);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,124 +44,120 @@ export function LoginPage() {
     }
   };
 
-  const apiUrl = import.meta.env.VITE_API_URL || '';
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center">
-              <FileText size={22} className="text-white" />
-            </div>
-            <span className="text-2xl font-bold">CollabDocs</span>
-          </div>
-          <p className="text-gray-500">
-            Real-time collaborative editing powered by CRDTs
+    <div className="min-h-screen grid lg:grid-cols-2">
+      <div className="hidden lg:flex flex-col justify-between bg-ink text-paper p-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-dot-grid opacity-10" />
+        <div className="relative">
+          <Logo size="md" textClassName="text-paper" />
+        </div>
+        <div className="relative max-w-md">
+          <h2 className="text-3xl font-semibold leading-snug tracking-tight">
+            Documents that stay in sync, even when you&apos;re offline.
+          </h2>
+          <p className="text-paper/60 mt-4 leading-relaxed">
+            Real-time collaboration, version history, and sharing — built for teams who write together.
           </p>
         </div>
+        <p className="relative text-sm text-paper/40">© CollabDocs</p>
+      </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <h2 className="text-xl font-semibold mb-6">
-            {isRegister ? 'Create Account' : 'Welcome Back'}
-          </h2>
+      <div className="flex items-center justify-center p-6 sm:p-10 bg-canvas relative">
+        <div className="absolute top-5 right-5 sm:top-8 sm:right-8">
+          <ThemeToggle />
+        </div>
+        <div className="w-full max-w-md animate-fade-up">
+          <Link to="/" className="lg:hidden mb-8 inline-block">
+            <Logo size="sm" />
+          </Link>
 
-          {error && (
-            <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
-              {error}
-            </div>
-          )}
+          <div className="bg-paper rounded-2xl border border-line shadow-sm p-8">
+            <h1 className="text-xl font-semibold text-ink mb-1">
+              {isRegister ? 'Create your account' : 'Welcome back'}
+            </h1>
+            <p className="text-sm text-muted mb-6">
+              {isRegister ? 'Get started in seconds' : 'Sign in to continue to your workspace'}
+            </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegister && (
-              <div className="relative">
-                <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            {error && (
+              <div className="text-sm text-ink bg-canvas border border-line px-4 py-3 rounded-xl mb-4">{error}</div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {isRegister && (
+                <div className="field-group">
+                  <User size={18} className="field-icon" />
+                  <input
+                    type="text"
+                    placeholder="Full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="input-field"
+                  />
+                </div>
+              )}
+              <div className="field-group">
+                <Mail size={18} className="field-icon" />
                 <input
-                  type="text"
-                  placeholder="Full name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                  className="input-field"
                 />
               </div>
-            )}
-            <div className="relative">
-              <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-              />
-            </div>
-            <div className="relative">
-              <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-              />
+              <div className="field-group">
+                <Lock size={18} className="field-icon" />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="input-field"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loginMutation.isPending || registerMutation.isPending}
+                className="btn-primary w-full mt-2"
+              >
+                {loginMutation.isPending || registerMutation.isPending
+                  ? 'Please wait…'
+                  : isRegister
+                  ? 'Create account'
+                  : 'Sign in'}
+              </button>
+            </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-line" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-paper px-3 text-muted">or</span>
+              </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loginMutation.isPending || registerMutation.isPending}
-              className="w-full bg-brand-600 text-white py-3 rounded-xl font-medium hover:bg-brand-700 transition-colors disabled:opacity-50"
-            >
-              {loginMutation.isPending || registerMutation.isPending
-                ? 'Please wait...'
-                : isRegister
-                ? 'Create Account'
-                : 'Sign In'}
-            </button>
-          </form>
+            <a href={getGoogleAuthUrl()} className="btn-secondary w-full">
+              Continue with Google
+            </a>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-4 text-gray-500">or continue with</span>
-            </div>
+            <p className="text-center text-sm text-muted mt-6">
+              {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
+              <button
+                type="button"
+                onClick={() => setIsRegister(!isRegister)}
+                className="text-accent font-medium hover:underline"
+              >
+                {isRegister ? 'Sign in' : 'Register'}
+              </button>
+            </p>
           </div>
-
-          <a
-            href={`${apiUrl}/api/auth/google`}
-            className="flex items-center justify-center gap-2 w-full py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-            </svg>
-            Google
-          </a>
-
-          <p className="text-center text-sm text-gray-500 mt-6">
-            {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
-            <button
-              onClick={() => setIsRegister(!isRegister)}
-              className="text-brand-600 font-medium hover:text-brand-700"
-            >
-              {isRegister ? 'Sign In' : 'Register'}
-            </button>
-          </p>
-        </div>
-
-        <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-          {['CRDT Sync', 'Offline First', 'Version History'].map((feature) => (
-            <div key={feature} className="bg-white/60 backdrop-blur rounded-xl p-3 border border-gray-100">
-              <p className="text-xs font-medium text-gray-600">{feature}</p>
-            </div>
-          ))}
         </div>
       </div>
     </div>
@@ -155,66 +165,84 @@ export function LoginPage() {
 }
 
 export function LandingPage() {
-  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-brand-900 to-purple-900 text-white">
-      <nav className="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-            <FileText size={18} />
-          </div>
-          <span className="font-bold text-xl">CollabDocs</span>
+    <div className="min-h-screen bg-canvas overflow-hidden">
+      <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <Logo size="sm" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+          <Link to="/login" className="text-sm text-muted hover:text-ink px-3 py-2">
+            Sign in
+          </Link>
+          <button type="button" onClick={() => navigate('/login')} className="btn-primary !py-2 !px-4">
+            Get started
+          </button>
         </div>
-        <Link
-          to={isAuthenticated ? '/dashboard' : '/login'}
-          className="bg-white text-gray-900 px-5 py-2 rounded-xl font-medium hover:bg-gray-100 transition-colors"
-        >
-          {isAuthenticated ? 'Dashboard' : 'Get Started'}
-        </Link>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-8 py-20 text-center">
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-          Collaborate in<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-            Real Time
-          </span>
-        </h1>
-        <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-10">
-          Production-grade document editor with CRDT synchronization, offline-first editing,
-          vector clocks, and conflict-free concurrent collaboration.
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link
-            to="/login"
-            className="bg-brand-500 text-white px-8 py-3 rounded-xl font-semibold text-lg hover:bg-brand-600 transition-colors"
-          >
-            Start Editing
-          </Link>
-          <a
-            href="#features"
-            className="border border-white/30 px-8 py-3 rounded-xl font-semibold text-lg hover:bg-white/10 transition-colors"
-          >
-            Learn More
-          </a>
+      <main className="max-w-6xl mx-auto px-6 pt-12 pb-24">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="animate-fade-up">
+            <p className="text-sm font-medium text-accent mb-4">Real-time collaboration</p>
+            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.15] text-ink">
+              Write together.<br />Stay in sync.
+            </h1>
+            <p className="text-lg text-muted mt-5 leading-relaxed max-w-lg">
+              A modern document editor with live cursors, offline editing, version history, and effortless sharing.
+            </p>
+            <div className="flex flex-wrap gap-3 mt-8">
+              <button type="button" onClick={() => navigate('/login')} className="btn-primary">
+                Start for free
+              </button>
+              <a href="#features" className="btn-secondary">
+                See features
+              </a>
+            </div>
+          </div>
+
+          <div className="relative animate-fade-up lg:pl-4" style={{ animationDelay: '0.1s' }}>
+            <div className="absolute -inset-4 bg-accent/10 rounded-3xl blur-2xl" />
+            <div className="relative bg-paper rounded-2xl border border-line shadow-xl overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-line bg-canvas">
+                <div className="w-2.5 h-2.5 rounded-full bg-line" />
+                <div className="w-2.5 h-2.5 rounded-full bg-line" />
+                <div className="w-2.5 h-2.5 rounded-full bg-line" />
+                <span className="ml-2 text-xs text-muted">Quarterly Report — CollabDocs</span>
+              </div>
+              <div className="p-8 space-y-3">
+                <div className="h-3 w-1/3 bg-accent/30 rounded-full" />
+                <div className="h-2 w-full preview-line rounded-full" />
+                <div className="h-2 w-[90%] preview-line rounded-full" />
+                <div className="h-2 w-4/5 preview-line rounded-full" />
+                <div className="h-2 w-full preview-line rounded-full mt-6" />
+                <div className="h-2 w-3/4 preview-line rounded-full" />
+                <div className="flex gap-2 mt-8">
+                  <div className="h-6 w-6 rounded-full bg-accent text-white text-[10px] flex items-center justify-center font-bold">A</div>
+                  <div className="h-6 w-6 rounded-full bg-ink/70 text-white text-[10px] flex items-center justify-center font-bold -ml-3 ring-2 ring-paper">B</div>
+                  <span className="text-xs text-muted self-center ml-1">2 editing now</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div id="features" className="grid md:grid-cols-3 gap-6 mt-24 text-left">
+        <section id="features" className="mt-28 grid sm:grid-cols-3 gap-6">
           {[
-            { title: 'CRDT Synchronization', desc: 'Yjs-powered conflict-free replicated data types ensure every edit merges deterministically.' },
-            { title: 'Offline First', desc: 'Edit without connection. Operations queue locally and sync automatically on reconnect.' },
-            { title: 'Version History', desc: 'Every operation stored. Reconstruct document state at any point in time.' },
-            { title: 'Live Cursors', desc: 'See collaborators\' cursors, selections, and typing indicators in real time.' },
-            { title: 'Vector Clocks', desc: 'Lamport timestamps and vector clocks track causality across distributed edits.' },
-            { title: 'Network Simulator', desc: 'Test latency, packet loss, and partition recovery with built-in network controls.' },
+            { title: 'Live sync', desc: 'See edits and cursors from collaborators in real time, powered by CRDTs.' },
+            { title: 'Version history', desc: 'Every change is tracked. Restore or reconstruct any point in time.' },
+            { title: 'Share & collaborate', desc: 'Invite by link or email with viewer, editor, or owner permissions.' },
           ].map((f) => (
-            <div key={f.title} className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
-              <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
-              <p className="text-gray-400 text-sm">{f.desc}</p>
+            <div key={f.title} className="p-6 bg-paper rounded-2xl border border-line card-hover">
+              <div className="w-9 h-9 rounded-xl bg-accent-soft flex items-center justify-center mb-4">
+                <div className="w-2 h-2 rounded-full bg-accent" />
+              </div>
+              <h3 className="font-semibold text-ink mb-2">{f.title}</h3>
+              <p className="text-sm text-muted leading-relaxed">{f.desc}</p>
             </div>
           ))}
-        </div>
+        </section>
       </main>
     </div>
   );

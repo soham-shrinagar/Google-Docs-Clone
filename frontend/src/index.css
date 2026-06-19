@@ -1,17 +1,120 @@
 @import "tailwindcss";
 
+/* ── Theme tokens (light default) ── */
+:root {
+  --theme-ink: #1e1b4b;
+  --theme-accent: #6366f1;
+  --theme-accent-soft: #eef2ff;
+  --theme-paper: #ffffff;
+  --theme-canvas: #f4f4f5;
+  --theme-muted: #71717a;
+  --theme-line: #e4e4e7;
+  --theme-dot: #d4d4d8;
+  --theme-preview: rgb(30 27 75 / 0.07);
+  --theme-shadow: rgb(30 27 75 / 0.08);
+  --theme-overlay: rgb(30 27 75 / 0.45);
+  color-scheme: light;
+}
+
+.dark {
+  --theme-ink: #f4f4f5;
+  --theme-accent: #818cf8;
+  --theme-accent-soft: rgb(99 102 241 / 0.18);
+  --theme-paper: #18181b;
+  --theme-canvas: #09090b;
+  --theme-muted: #a1a1aa;
+  --theme-line: #27272a;
+  --theme-dot: #3f3f46;
+  --theme-preview: rgb(244 244 245 / 0.1);
+  --theme-shadow: rgb(0 0 0 / 0.35);
+  --theme-overlay: rgb(0 0 0 / 0.65);
+  color-scheme: dark;
+}
+
 @theme {
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
+  --color-ink: var(--theme-ink);
+  --color-accent: var(--theme-accent);
+  --color-accent-soft: var(--theme-accent-soft);
+  --color-paper: var(--theme-paper);
+  --color-canvas: var(--theme-canvas);
+  --color-muted: var(--theme-muted);
+  --color-line: var(--theme-line);
 }
 
 body {
-  @apply bg-gray-50 text-gray-900 font-sans antialiased;
+  @apply bg-canvas text-ink font-sans antialiased;
+}
+
+.bg-dot-grid {
+  background-image: radial-gradient(circle, var(--theme-dot) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.preview-line {
+  background-color: var(--theme-preview);
+}
+
+.card-hover {
+  @apply transition-all duration-200 hover:-translate-y-0.5;
+  box-shadow: 0 1px 2px var(--theme-shadow);
+}
+
+.card-hover:hover {
+  box-shadow: 0 8px 24px var(--theme-shadow);
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 bg-accent text-white font-medium rounded-xl px-5 py-2.5 text-sm shadow-sm hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 bg-paper text-ink font-medium rounded-xl px-5 py-2.5 text-sm border border-line shadow-sm hover:border-accent/40 active:scale-[0.98] transition-all disabled:opacity-50;
+}
+
+/* Base input — no icon padding here */
+.input-field {
+  @apply w-full py-2.5 pl-4 pr-4 text-sm bg-paper text-ink border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/25 focus:border-accent transition-shadow placeholder:text-muted;
+}
+
+/* Icon + input: icon sits in gutter, text never overlaps */
+.field-group {
+  @apply relative;
+}
+
+.field-group .field-icon {
+  @apply absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none z-10;
+}
+
+.field-group .input-field {
+  padding-left: 2.75rem;
+}
+
+.scroll-panel {
+  scrollbar-gutter: stable;
+  padding-right: 0.25rem;
+}
+
+.scroll-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-panel::-webkit-scrollbar-thumb {
+  background: var(--theme-line);
+  border-radius: 999px;
+}
+
+.scroll-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-muted);
+}
+
+.modal-shell {
+  @apply flex flex-col max-h-[min(88vh,720px)] min-h-0;
 }
 
 .collaboration-cursor__caret {
@@ -46,65 +149,71 @@ body {
 }
 
 .editor-canvas {
-  background: #f0f2f5;
+  background: var(--theme-canvas);
   flex: 1;
-  padding: 2rem 1rem 5rem;
+  padding: 2.5rem 1.5rem 5rem;
 }
 
 .editor-paper {
   max-width: 816px;
   min-height: 1056px;
   margin: 0 auto;
-  background: white;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 24px rgba(0, 0, 0, 0.08);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  color: #18181b;
+  box-shadow: 0 1px 3px var(--theme-shadow), 0 8px 32px var(--theme-shadow);
+  border-radius: 8px;
+  border: 1px solid var(--theme-line);
+}
+
+.dark .editor-paper .ProseMirror {
+  color: #18181b;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
-  color: #9ca3af;
+  color: #71717a;
   content: attr(data-placeholder);
   float: left;
   height: 0;
   pointer-events: none;
 }
 
-.ProseMirror h1 { @apply text-3xl font-bold mb-4; }
-.ProseMirror h2 { @apply text-2xl font-semibold mb-3; }
-.ProseMirror h3 { @apply text-xl font-semibold mb-2; }
-.ProseMirror blockquote { @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4; }
-.ProseMirror pre { @apply bg-gray-900 text-gray-100 rounded-lg p-4 my-4 overflow-x-auto font-mono text-sm; }
-.ProseMirror code { @apply bg-gray-100 rounded px-1 py-0.5 font-mono text-sm; }
-.ProseMirror pre code { @apply bg-transparent p-0; }
+.ProseMirror h1 { @apply text-3xl font-semibold mb-4 tracking-tight; }
+.ProseMirror h2 { @apply text-2xl font-semibold mb-3 tracking-tight; }
+.ProseMirror h3 { @apply text-xl font-medium mb-2; }
+.ProseMirror blockquote { @apply border-l-4 border-accent/40 pl-4 italic my-4; color: #71717a; }
+.ProseMirror pre { @apply rounded-xl p-4 my-4 overflow-x-auto font-mono text-sm; background: #1e1b4b; color: #f4f4f5; }
+.ProseMirror code { @apply bg-accent-soft rounded-md px-1.5 py-0.5 font-mono text-sm; color: #1e1b4b; }
+.ProseMirror pre code { @apply bg-transparent p-0 text-inherit; }
 .ProseMirror table { @apply border-collapse w-full my-4; }
-.ProseMirror th, .ProseMirror td { @apply border border-gray-300 px-3 py-2; }
-.ProseMirror th { @apply bg-gray-100 font-semibold; }
-.ProseMirror hr { @apply my-6 border-gray-300; }
+.ProseMirror th, .ProseMirror td { @apply border border-line px-3 py-2; }
+.ProseMirror th { background: var(--theme-canvas); @apply font-medium; }
+.ProseMirror hr { @apply my-6 border-line; }
 .ProseMirror ul { @apply list-disc pl-6 my-2; }
 .ProseMirror ol { @apply list-decimal pl-6 my-2; }
-.ProseMirror a { @apply text-brand-600 underline; }
-.ProseMirror img { @apply max-w-full rounded-lg my-4; }
+.ProseMirror a { @apply text-accent underline underline-offset-2; }
+.ProseMirror img { @apply max-w-full rounded-xl my-4; }
 
 .pdf-embed-wrapper {
-  @apply my-6 rounded-xl border border-gray-200 overflow-hidden bg-gray-50 shadow-sm;
+  @apply my-6 rounded-xl border border-line overflow-hidden bg-canvas shadow-sm;
 }
 
 .pdf-embed-header {
-  @apply flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-200 text-sm font-medium text-gray-700;
+  @apply flex items-center justify-between px-4 py-2.5 bg-canvas border-b border-line text-sm font-medium text-muted;
 }
 
 .pdf-embed-header a {
-  @apply text-brand-600 hover:text-brand-700 text-xs font-normal no-underline;
+  @apply text-accent text-xs font-medium no-underline hover:underline;
 }
 
 .pdf-embed-frame {
-  @apply w-full bg-white block;
+  @apply w-full block;
+  background: #fff;
   min-height: 480px;
 }
 
-.diff-added { @apply bg-green-100 text-green-800; }
-.diff-removed { @apply bg-red-100 text-red-800 line-through; }
-.diff-modified { @apply bg-yellow-100 text-yellow-800; }
+.diff-added { @apply bg-accent-soft text-ink; }
+.diff-removed { @apply bg-canvas text-muted line-through; }
+.diff-modified { @apply bg-accent-soft/60 text-ink; }
 
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
@@ -113,4 +222,13 @@ body {
 
 .animate-pulse-dot {
   animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out forwards;
 }

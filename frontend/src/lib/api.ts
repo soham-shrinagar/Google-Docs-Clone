@@ -1,5 +1,10 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
 
+export function getGoogleAuthUrl(): string {
+  const base = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+  return `${base}/api/auth/google`;
+}
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>;
 }
@@ -51,6 +56,10 @@ export const api = {
 
   getMe() {
     return request<{ user: import('../types').User }>(API_URL, '/api/auth/me');
+  },
+
+  completeOAuthSession() {
+    return request<{ user: import('../types').User; token: string }>(API_URL, '/api/auth/session');
   },
 
   logout() {

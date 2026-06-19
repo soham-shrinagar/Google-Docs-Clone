@@ -1,6 +1,12 @@
 import { useAnalytics } from '../../hooks/useApi';
 import { useEditorStore } from '../../store';
-import { X, Activity, Users, Zap, Clock, Database, Server } from 'lucide-react';
+import { X, Activity } from 'lucide-react';
+
+function formatUptime(seconds: number) {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+}
 
 export function AnalyticsPanel() {
   const { data: metrics } = useAnalytics();
@@ -8,39 +14,57 @@ export function AnalyticsPanel() {
 
   if (!metrics) return null;
 
-  const items = [
-    { icon: Users, label: 'Connected Users', value: metrics.connectedUsers },
-    { icon: Activity, label: 'Documents Open', value: metrics.documentsOpen },
-    { icon: Zap, label: 'Ops / Second', value: metrics.operationsPerSecond },
-    { icon: Server, label: 'CRDT Merges', value: metrics.crdtMergeCount },
-    { icon: Clock, label: 'WS Latency', value: `${metrics.wsLatency}ms` },
-    { icon: Clock, label: 'Sync Time', value: `${metrics.syncTime}ms` },
-    { icon: Clock, label: 'Avg Merge Time', value: `${metrics.avgMergeTime}ms` },
-    { icon: Users, label: 'Active Sessions', value: metrics.activeSessions },
-    { icon: Database, label: 'Memory (Heap)', value: `${metrics.memoryUsage.heapUsed}MB` },
-    { icon: Server, label: 'Server Uptime', value: `${Math.floor(metrics.serverUptime / 60)}m` },
-    { icon: Zap, label: 'Total Operations', value: metrics.totalOperations },
+  const sections = [
+    {
+      title: 'Live',
+      rows: [
+        { label: 'Editors online', value: metrics.connectedUsers },
+        { label: 'Documents open', value: metrics.documentsOpen },
+        { label: 'Ops / second', value: metrics.operationsPerSecond },
+      ],
+    },
+    {
+      title: 'Performance',
+      rows: [
+        { label: 'WS latency', value: `${metrics.wsLatency} ms` },
+        { label: 'Persist time', value: `${metrics.syncTime} ms` },
+        { label: 'Merge time', value: `${metrics.avgMergeTime} ms` },
+        { label: 'Total merges', value: metrics.crdtMergeCount },
+      ],
+    },
+    {
+      title: 'Server',
+      rows: [
+        { label: 'Total operations', value: metrics.totalOperations },
+        { label: 'Memory', value: `${metrics.memoryUsage.heapUsed} MB` },
+        { label: 'Uptime', value: formatUptime(metrics.serverUptime) },
+      ],
+    },
   ];
 
   return (
-    <div className="fixed bottom-20 left-4 w-72 bg-white border border-gray-200 rounded-xl shadow-2xl z-50">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+    <div className="fixed bottom-16 right-4 w-72 bg-paper border border-line rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-up">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-canvas">
         <div className="flex items-center gap-2">
-          <Activity size={18} className="text-brand-600" />
-          <h3 className="font-semibold text-sm">Analytics</h3>
+          <Activity size={16} className="text-accent" />
+          <h3 className="text-sm font-semibold text-ink">Analytics</h3>
         </div>
-        <button onClick={toggleAnalytics} className="p-1 hover:bg-gray-100 rounded">
+        <button type="button" onClick={toggleAnalytics} className="p-1 rounded-lg text-muted hover:text-ink hover:bg-paper">
           <X size={16} />
         </button>
       </div>
-      <div className="p-3 grid grid-cols-2 gap-2">
-        {items.map((item) => (
-          <div key={item.label} className="bg-gray-50 rounded-lg p-2.5">
-            <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-              <item.icon size={12} />
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </div>
-            <p className="text-lg font-bold text-gray-900">{item.value}</p>
+      <div className="max-h-80 overflow-y-auto">
+        {sections.map((section) => (
+          <div key={section.title} className="px-4 py-3 border-b border-line/60 last:border-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-2">{section.title}</p>
+            <dl className="space-y-2">
+              {section.rows.map((row) => (
+                <div key={row.label} className="flex items-center justify-between text-sm">
+                  <dt className="text-muted">{row.label}</dt>
+                  <dd className="font-medium tabular-nums text-ink">{row.value}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         ))}
       </div>

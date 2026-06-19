@@ -41,7 +41,15 @@ export class AuthService {
   }) {
     let user = await prisma.user.findUnique({ where: { googleId: profile.id } });
 
-    if (!user) {
+    if (user) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name: profile.name,
+          avatar: profile.avatar || user.avatar,
+        },
+      });
+    } else {
       user = await prisma.user.findUnique({ where: { email: profile.email } });
       if (user) {
         user = await prisma.user.update({
@@ -60,6 +68,8 @@ export class AuthService {
         });
       }
     }
+
+    if (!user) throw new Error('Failed to create Google user');
 
     const token = signToken(user);
     return { user: this.sanitizeUser(user), token };

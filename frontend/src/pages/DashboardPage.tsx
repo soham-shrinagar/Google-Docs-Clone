@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Pin, ArrowUpDown, LayoutTemplate } from 'lucide-react';
+import { Plus, Search, Pin, LayoutTemplate, Upload, FilePlus } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Navbar } from '../components/layout/Navbar';
 import { DocumentCard } from '../components/dashboard/DocumentCard';
 import { TemplatePicker } from '../components/dashboard/TemplatePicker';
 import { useDocuments, useRecentDocuments, useCreateDocument, useDeleteDocument } from '../hooks/useApi';
-import { useDashboardStore } from '../store';
+import { useDashboardStore, useAuthStore } from '../store';
 import { api } from '../lib/api';
 import { buildUploadInitialContent } from '../components/editor/FileUploadButton';
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const { search, sortBy, sortOrder, filterPinned, setSearch, setSortBy, setSortOrder, setFilterPinned } =
     useDashboardStore();
   const { data: documents, isLoading } = useDocuments();
@@ -61,107 +64,142 @@ export function DashboardPage() {
 
   const handlePin = async (id: string) => {
     await api.togglePin(id);
-    window.location.reload();
+    await queryClient.invalidateQueries({ queryKey: ['documents'] });
   };
 
+  const firstName = user?.name?.split(' ')[0] ?? 'there';
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100/80">
+    <div className="min-h-screen bg-canvas">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">My Documents</h1>
-            <p className="text-gray-500 mt-1">Create from templates, upload files, and collaborate in real time</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowTemplates(true)}
-              disabled={creating}
-              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl font-medium hover:shadow-md hover:border-brand-200 transition-all disabled:opacity-50"
-            >
-              <LayoutTemplate size={20} />
-              Templates
-            </button>
-            <button
-              onClick={() => handleCreate()}
-              disabled={creating}
-              className="flex items-center gap-2 bg-brand-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-brand-700 shadow-sm hover:shadow transition-all disabled:opacity-50"
-            >
-              <Plus size={20} />
-              {creating ? 'Creating…' : 'Blank Doc'}
-            </button>
-          </div>
+      <main className="max-w-6xl mx-auto px-6 py-8 animate-fade-up">
+        <header className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-ink">
+            Hi, {firstName}
+          </h1>
+          <p className="text-muted mt-1.5">
+            {documents?.length
+              ? `${documents.length} document${documents.length === 1 ? '' : 's'} in your workspace`
+              : 'Start something new today'}
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10">
+          <button
+            type="button"
+            onClick={() => handleCreate()}
+            disabled={creating}
+            className="flex items-center gap-4 p-4 bg-paper rounded-2xl border border-line text-left card-hover group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-accent-soft flex items-center justify-center group-hover:bg-accent group-hover:text-white transition-colors">
+              <FilePlus size={20} className="text-accent group-hover:text-white" />
+            </div>
+            <div>
+              <p className="font-medium text-ink">Blank document</p>
+              <p className="text-xs text-muted mt-0.5">Start from scratch</p>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowTemplates(true)}
+            disabled={creating}
+            className="flex items-center gap-4 p-4 bg-paper rounded-2xl border border-line text-left card-hover group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-accent-soft flex items-center justify-center group-hover:bg-accent group-hover:text-white transition-colors">
+              <LayoutTemplate size={20} className="text-accent group-hover:text-white" />
+            </div>
+            <div>
+              <p className="font-medium text-ink">From template</p>
+              <p className="text-xs text-muted mt-0.5">Resume, report, notes…</p>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowTemplates(true)}
+            disabled={creating}
+            className="flex items-center gap-4 p-4 bg-paper rounded-2xl border border-line text-left card-hover group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-accent-soft flex items-center justify-center group-hover:bg-accent group-hover:text-white transition-colors">
+              <Upload size={20} className="text-accent group-hover:text-white" />
+            </div>
+            <div>
+              <p className="font-medium text-ink">Upload file</p>
+              <p className="text-xs text-muted mt-0.5">PDF or image</p>
+            </div>
+          </button>
         </div>
 
         {error && (
-          <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100">{error}</div>
+          <div className="mb-6 px-4 py-3 bg-paper border border-line rounded-xl text-sm text-ink">{error}</div>
         )}
 
         {recentDocs && recentDocs.length > 0 && (
           <section className="mb-8">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Recently Opened</h2>
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {recentDocs.slice(0, 5).map((doc) => (
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">Recent</h2>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {recentDocs.slice(0, 6).map((doc) => (
                 <button
                   key={doc.id}
+                  type="button"
                   onClick={() => navigate(`/document/${doc.id}`)}
-                  className="flex-shrink-0 bg-white border border-gray-200 rounded-xl px-4 py-2.5 hover:border-brand-300 hover:shadow-sm transition-all"
+                  className="shrink-0 px-4 py-2 bg-paper border border-line rounded-full text-sm font-medium hover:border-accent/40 hover:shadow-sm transition-all"
                 >
-                  <p className="text-sm font-medium truncate max-w-[150px]">{doc.title}</p>
+                  {doc.title}
                 </button>
               ))}
             </div>
           </section>
         )}
 
-        <div className="flex items-center gap-3 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+          <div className="field-group flex-1 min-w-0">
+            <Search size={18} className="field-icon" />
             <input
               type="text"
-              placeholder="Search documents..."
+              placeholder="Search documents…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-sm"
+              className="input-field"
             />
           </div>
-
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'updatedAt' | 'createdAt' | 'title')}
-            className="px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-sm shadow-sm"
-          >
-            <option value="updatedAt">Last Modified</option>
-            <option value="createdAt">Created</option>
-            <option value="title">Title</option>
-          </select>
-
-          <button
-            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="p-2.5 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 shadow-sm"
-          >
-            <ArrowUpDown size={18} />
-          </button>
-
-          <button
-            onClick={() => setFilterPinned(!filterPinned)}
-            className={`flex items-center gap-1.5 px-3 py-2.5 border rounded-xl text-sm shadow-sm ${
-              filterPinned ? 'bg-brand-50 border-brand-300 text-brand-700' : 'bg-white border-gray-200'
-            }`}
-          >
-            <Pin size={16} /> Pinned
-          </button>
+          <div className="flex gap-2">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'updatedAt' | 'createdAt' | 'title')}
+              className="input-field w-auto min-w-[130px]"
+            >
+              <option value="updatedAt">Last modified</option>
+              <option value="createdAt">Date created</option>
+              <option value="title">Title</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="btn-secondary px-3"
+              title="Toggle sort order"
+            >
+              {sortOrder === 'desc' ? '↓' : '↑'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterPinned(!filterPinned)}
+              className={`btn-secondary px-3 ${filterPinned ? '!border-accent/50 !bg-accent-soft !text-accent' : ''}`}
+              title="Pinned only"
+            >
+              <Pin size={16} />
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-xl h-64 animate-pulse" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-paper rounded-2xl border border-line h-64 animate-pulse" />
             ))}
           </div>
         ) : documents && documents.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {documents.map((doc) => (
               <DocumentCard
                 key={doc.id}
@@ -172,14 +210,15 @@ export function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm">
-            <LayoutTemplate size={48} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 mb-4">No documents yet. Pick a template or upload a file to get started.</p>
-            <button
-              onClick={() => setShowTemplates(true)}
-              className="text-brand-600 font-medium hover:text-brand-700"
-            >
-              Browse Templates
+          <div className="text-center py-20 bg-paper rounded-2xl border border-line border-dashed">
+            <div className="w-14 h-14 rounded-2xl bg-accent-soft flex items-center justify-center mx-auto mb-4">
+              <Plus size={24} className="text-accent" />
+            </div>
+            <p className="text-ink font-medium mb-1">No documents yet</p>
+            <p className="text-sm text-muted mb-6">Pick a template or create a blank doc to get started</p>
+            <button type="button" onClick={() => setShowTemplates(true)} className="btn-primary">
+              <LayoutTemplate size={18} />
+              Browse templates
             </button>
           </div>
         )}

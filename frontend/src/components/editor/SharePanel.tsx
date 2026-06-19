@@ -72,30 +72,31 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
   };
 
   return (
-    <div className="fixed right-4 top-16 w-96 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-4">
+    <div className="fixed right-4 top-16 w-[min(calc(100vw-2rem),24rem)] bg-paper border border-line rounded-2xl shadow-xl z-50 p-5 animate-fade-up">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-          <Users size={18} /> Share document
+        <h3 className="font-semibold text-ink flex items-center gap-2">
+          <Users size={18} className="text-accent" /> Share document
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">
+        <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-canvas text-muted hover:text-ink">
           <X size={16} />
         </button>
       </div>
 
       <div className="mb-4">
-        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Share link</label>
-        <p className="text-xs text-gray-400 mb-2">Anyone with the link can join as an editor (must be signed in).</p>
+        <label className="text-xs font-medium text-muted uppercase tracking-wide">Share link</label>
+        <p className="text-xs text-muted mb-2 mt-1">Anyone with the link can join as an editor (must be signed in).</p>
         <div className="flex gap-2 mt-1">
           <input
             readOnly
             value={shareUrl}
-            placeholder="Click copy to generate link..."
-            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 truncate"
+            placeholder="Click copy to generate link…"
+            className="input-field flex-1 min-w-0 !py-2 text-xs bg-canvas truncate"
           />
           <button
+            type="button"
             onClick={handleCopy}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50"
+            className="btn-primary !px-3 !py-2 shrink-0"
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? 'Copied' : 'Copy'}
@@ -103,30 +104,31 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
         </div>
         {!shareUrl && (
           <button
+            type="button"
             onClick={handleCreateLink}
             disabled={loading}
-            className="mt-2 flex items-center gap-1.5 text-sm text-brand-600 hover:text-brand-700"
+            className="mt-2 flex items-center gap-1.5 text-sm text-accent hover:underline"
           >
             <Link2 size={14} /> Generate share link
           </button>
         )}
       </div>
 
-      <div className="border-t border-gray-100 pt-4 mb-4">
-        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Invite by email</label>
-        <p className="text-xs text-gray-400 mb-2">Recipient must already have a CollabDocs account.</p>
-        <div className="flex gap-2 mt-1">
+      <div className="border-t border-line pt-4 mb-4">
+        <label className="text-xs font-medium text-muted uppercase tracking-wide">Invite by email</label>
+        <p className="text-xs text-muted mb-2 mt-1">Recipient must already have a CollabDocs account.</p>
+        <div className="flex flex-col sm:flex-row gap-2 mt-1">
           <input
             type="email"
             placeholder="collaborator@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            className="input-field flex-1 min-w-0 !py-2"
           />
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="px-2 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+            className="input-field w-full sm:w-auto sm:min-w-[120px] !py-2"
           >
             <option value="EDITOR">Editor</option>
             <option value="COMMENTER">Commenter</option>
@@ -134,34 +136,35 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
           </select>
         </div>
         <button
+          type="button"
           onClick={handleShareEmail}
           disabled={loading || !email.trim()}
-          className="mt-2 w-full px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+          className="btn-primary w-full mt-3 !py-2"
         >
           Send invite
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
-      {success && <p className="text-sm text-green-600 mb-2">{success}</p>}
+      {error && <p className="text-sm text-ink bg-canvas border border-line rounded-lg px-3 py-2 mb-2">{error}</p>}
+      {success && <p className="text-sm text-accent bg-accent-soft rounded-lg px-3 py-2 mb-2">{success}</p>}
 
       {collaborators.length > 0 && (
-        <div className="border-t border-gray-100 pt-3">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">People with access</p>
-          <ul className="space-y-2 max-h-32 overflow-y-auto">
+        <div className="border-t border-line pt-3">
+          <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">People with access</p>
+          <ul className="space-y-2 max-h-32 overflow-y-auto scroll-panel">
             {collaborators.map((c) => (
               <li key={c.id} className="flex items-center gap-2 text-sm">
                 <span
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-medium"
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
                   style={{ backgroundColor: c.color }}
                 >
                   {c.name.charAt(0).toUpperCase()}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{c.name}</p>
-                  <p className="text-xs text-gray-400 truncate">{c.email}</p>
+                  <p className="font-medium truncate text-ink">{c.name}</p>
+                  <p className="text-xs text-muted truncate">{c.email}</p>
                 </div>
-                <span className="text-xs text-gray-500 capitalize">{c.role.toLowerCase()}</span>
+                <span className="text-xs text-muted capitalize shrink-0">{c.role.toLowerCase()}</span>
               </li>
             ))}
           </ul>

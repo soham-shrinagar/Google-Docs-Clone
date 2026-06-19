@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, LayoutTemplate, FileText, Upload, Loader2 } from 'lucide-react';
+import { X, Upload, Loader2, FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { TEMPLATE_CATEGORIES, type DocumentTemplate } from '../../lib/templates';
@@ -34,60 +34,66 @@ export function TemplatePicker({ open, onClose, onSelect, onUpload, loading }: T
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center gap-2">
-            <LayoutTemplate className="text-brand-600" size={22} />
-            <h2 className="text-xl font-bold">Create a Document</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div
+        className="absolute inset-0 backdrop-blur-sm"
+        style={{ background: 'var(--theme-overlay)' }}
+        onClick={onClose}
+      />
+      <div className="relative bg-paper rounded-2xl border border-line shadow-2xl w-full max-w-3xl modal-shell animate-fade-up">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-line shrink-0">
+          <div>
+            <h2 className="text-lg font-semibold text-ink">Create a document</h2>
+            <p className="text-sm text-muted mt-0.5">Upload a file or pick a template</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+          <button type="button" onClick={onClose} className="p-2 rounded-lg text-muted hover:text-ink hover:bg-canvas">
             <X size={20} />
           </button>
         </div>
 
-        <div className="px-6 py-4 border-b border-gray-100">
-          <label className="flex items-center justify-center gap-3 w-full py-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-400 hover:bg-brand-50/50 cursor-pointer transition-colors">
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf"
-              className="hidden"
-              onChange={handleFileChange}
-              disabled={loading}
-            />
+        <label className="mx-6 mt-5 mb-0 flex items-center gap-4 py-5 px-5 border-2 border-dashed border-line rounded-xl cursor-pointer hover:border-accent/40 hover:bg-accent-soft/30 transition-colors shrink-0">
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf"
+            className="hidden"
+            onChange={handleFileChange}
+            disabled={loading}
+          />
+          <div className="w-11 h-11 rounded-xl bg-accent-soft flex items-center justify-center shrink-0">
             {loading ? (
-              <Loader2 className="animate-spin text-brand-600" size={24} />
+              <Loader2 className="animate-spin text-accent" size={22} />
             ) : (
-              <Upload className="text-brand-600" size={24} />
+              <Upload className="text-accent" size={22} />
             )}
-            <div className="text-left">
-              <p className="font-semibold text-gray-900">Upload from computer</p>
-              <p className="text-sm text-gray-500">Images (JPG, PNG, GIF, WebP) or PDF — up to 15 MB</p>
-            </div>
-          </label>
+          </div>
+          <div className="min-w-0">
+            <p className="font-medium text-ink">Upload from computer</p>
+            <p className="text-sm text-muted">PDF or image — up to 15 MB</p>
+          </div>
+        </label>
+
+        <div className="px-6 py-4 border-b border-line shrink-0">
+          <div className="flex flex-wrap gap-2">
+            {TEMPLATE_CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategory(cat)}
+                className={clsx(
+                  'px-4 py-1.5 rounded-full text-sm font-medium transition-all',
+                  category === cat
+                    ? 'bg-accent text-white shadow-sm'
+                    : 'bg-canvas text-muted hover:text-ink'
+                )}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="px-6 py-3 flex gap-2 overflow-x-auto border-b border-gray-100">
-          {TEMPLATE_CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={clsx(
-                'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
-                category === cat
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              )}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          <p className="text-sm font-medium text-gray-500 mb-4">Or start from a template</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="flex-1 min-h-0 overflow-y-auto scroll-panel px-6 py-5">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-4 pr-1">
             {filtered.map((template) => (
               <TemplateCard
                 key={template.id}
@@ -114,28 +120,29 @@ function TemplateCard({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
-      className="group text-left bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-brand-300 transition-all disabled:opacity-50"
+      className="group text-left bg-paper border border-line rounded-xl overflow-hidden card-hover disabled:opacity-50 w-full"
     >
-      <div
-        className="h-32 relative overflow-hidden border-b border-gray-100"
-        style={{ background: template.thumbnail }}
-      >
-        {template.html && template.id !== 'blank' ? (
-          <div
-            className="absolute inset-2 bg-white/90 rounded-lg p-2 text-[6px] leading-tight text-gray-600 overflow-hidden pointer-events-none shadow-inner"
-            dangerouslySetInnerHTML={{ __html: template.html }}
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <FileText size={32} className="text-gray-400 group-hover:text-brand-600 transition-colors" />
+      <div className="h-28 bg-canvas p-3 relative">
+        <div className="h-full bg-paper rounded-lg border border-line/60 p-2.5 shadow-sm">
+          <div className="h-1 w-6 bg-accent rounded-full mb-2" />
+          <div className="h-1.5 w-full preview-line rounded-full mb-1" />
+          <div className="h-1.5 w-4/5 preview-line rounded-full mb-1" />
+          <div className="h-1.5 w-3/5 preview-line rounded-full" />
+        </div>
+        {template.id === 'blank' && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <FileText size={28} className="text-muted/40" />
           </div>
         )}
       </div>
-      <div className="p-3">
-        <p className="font-semibold text-sm text-gray-900 group-hover:text-brand-600">{template.name}</p>
-        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{template.description}</p>
+      <div className="p-3 border-t border-line/60">
+        <p className="font-medium text-sm text-ink group-hover:text-accent transition-colors truncate">
+          {template.name}
+        </p>
+        <p className="text-xs text-muted mt-0.5 line-clamp-2">{template.description}</p>
       </div>
     </button>
   );

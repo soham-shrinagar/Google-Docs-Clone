@@ -4,6 +4,7 @@ import { authService } from '../services/auth.service.js';
 import { authenticate, type AuthRequest } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { config } from '../config/index.js';
+import { verifyToken } from '../lib/jwt.js';
 
 const router = Router();
 
@@ -50,7 +51,11 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 router.post('/logout', (_req, res: Response) => {
-  res.clearCookie('token', cookieOptions());
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: config.isProduction,
+    sameSite: 'lax',
+  });
   res.json({ success: true });
 });
 
@@ -66,9 +71,29 @@ router.get('/google', (_req, res: Response) => {
   res.redirect(url);
 });
 
+router.get('/session', async (req: AuthRequest, res: Response) => {
+  try {
+    const token = req.cookies?.token;
+    if (!token) {
+      res.status(401).json({ error: 'No session' });
+      return;
+    }
+
+    const payload = verifyToken(token);
+    const user = await authService.getMe(payload.userId);
+    res.json({ user, token });
+  } catch {
+    res.status(401).json({ error: 'Invalid session' });
+  }
+});
+
 router.get('/google/callback', async (req: AuthRequest, res: Response) => {
   try {
-    const { code } = req.query;
+    const { code, error } = req.query;
+    if (error) {
+      res.redirect(`${config.clientUrl}/login?error=oauth_denied`);
+      return;
+    }
     if (!code || typeof code !== 'string') {
       res.redirect(`${config.clientUrl}/login?error=oauth_failed`);
       return;
@@ -86,11 +111,29 @@ router.get('/google/callback', async (req: AuthRequest, res: Response) => {
       }),
     });
 
-    const tokens = await tokenRes.json() as { access_token: string };
+    const tokens = await tokenRes.json() as { access_token?: string; error?: string; error_description?: string };
+    if (!tokenRes.ok || !tokens.access_token) {
+      console.error('Google token exchange failed:', tokens.error || tokens.error_description || tokenRes.status);
+      res.redirect(`${config.clientUrl}/login?error=oauth_failed`);
+      return;
+    }
+
     const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
-    const profile = await profileRes.json() as { id: string; email: string; name: string; picture?: string };
+    const profile = await profileRes.json() as {
+      id?: string;
+      email?: string;
+      name?: string;
+      picture?: string;
+      error?: { message?: string };
+    };
+
+    if (!profileRes.ok || !profile.id || !profile.email || !profile.name) {
+      console.error('Google profile fetch failed:', profile.error?.message || profileRes.status);
+      res.redirect(`${config.clientUrl}/login?error=oauth_failed`);
+      return;
+    }
 
     const result = await authService.findOrCreateGoogleUser({
       id: profile.id,
@@ -100,8 +143,9 @@ router.get('/google/callback', async (req: AuthRequest, res: Response) => {
     });
 
     setTokenCookie(res, result.token);
-    res.redirect(`${config.clientUrl}/dashboard`);
-  } catch {
+    res.redirect(`${config.clientUrl}/auth/callback`);
+  } catch (err) {
+    console.error('Google OAuth callback error:', err);
     res.redirect(`${config.clientUrl}/login?error=oauth_failed`);
   }
 });
@@ -111,6 +155,7 @@ function cookieOptions() {
     httpOnly: true,
     secure: config.isProduction,
     sameSite: 'lax' as const,
+    path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   };
 }

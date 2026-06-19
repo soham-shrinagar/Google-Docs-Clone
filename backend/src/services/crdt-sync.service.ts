@@ -201,11 +201,12 @@ export class CrdtSyncService {
 
     switch (messageType) {
       case messageSync: {
+        const mergeStart = Date.now();
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, messageSync);
         const syncType = syncProtocol.readSyncMessage(decoder, encoder, room.doc, ws);
         if (syncType === syncProtocol.messageYjsSyncStep2) {
-          analyticsService.recordMerge();
+          analyticsService.recordMerge(Date.now() - mergeStart);
           const mergeEvent: DistributedEvent = {
             id: crypto.randomUUID(),
             type: 'merge',

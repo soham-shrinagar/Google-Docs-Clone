@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persistTheme, type Theme } from '../lib/theme.js';
 import type {
   User,
   ConnectionStatus,
@@ -108,4 +109,22 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   setSortBy: (sortBy) => set({ sortBy }),
   setSortOrder: (sortOrder) => set({ sortOrder }),
   setFilterPinned: (filterPinned) => set({ filterPinned }),
+}));
+
+interface ThemeState {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
+}
+
+export const useThemeStore = create<ThemeState>((set, get) => ({
+  theme: 'light',
+  setTheme: (theme) => {
+    persistTheme(theme);
+    set({ theme });
+  },
+  toggleTheme: () => {
+    const next = get().theme === 'light' ? 'dark' : 'light';
+    get().setTheme(next);
+  },
 }));

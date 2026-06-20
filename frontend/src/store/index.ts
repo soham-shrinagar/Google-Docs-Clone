@@ -18,22 +18,29 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 interface EditorState {
   connectionStatus: ConnectionStatus;
-  syncStatus: string;
+  saveState: 'idle' | 'saving';
+  localReady: boolean;
   showVersionHistory: boolean;
   presenceUsers: PresenceUser[];
   setConnectionStatus: (status: ConnectionStatus) => void;
-  setSyncStatus: (status: string) => void;
+  setSaveState: (state: 'idle' | 'saving') => void;
+  setLocalReady: (ready: boolean) => void;
+  resetConnectionState: () => void;
   toggleVersionHistory: () => void;
   setPresenceUsers: (users: PresenceUser[]) => void;
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
   connectionStatus: 'connecting',
-  syncStatus: 'Connecting...',
+  saveState: 'idle',
+  localReady: false,
   showVersionHistory: false,
   presenceUsers: [],
   setConnectionStatus: (status) => set({ connectionStatus: status }),
-  setSyncStatus: (status) => set({ syncStatus: status }),
+  setSaveState: (saveState) => set({ saveState }),
+  setLocalReady: (localReady) => set({ localReady }),
+  resetConnectionState: () =>
+    set({ connectionStatus: 'connecting', saveState: 'idle', localReady: false }),
   toggleVersionHistory: () => set((s) => ({ showVersionHistory: !s.showVersionHistory })),
   setPresenceUsers: (users) => set({ presenceUsers: users }),
 }));

@@ -120,7 +120,9 @@ export function EditorPage() {
     toggleVersionHistory,
     setPresenceUsers,
     setConnectionStatus,
-    setSyncStatus,
+    setSaveState,
+    setLocalReady,
+    resetConnectionState,
   } = useEditorStore();
 
   useEffect(() => {
@@ -130,6 +132,7 @@ export function EditorPage() {
   useEffect(() => {
     if (!id || !user || !document) return;
 
+    resetConnectionState();
     let cancelled = false;
     const idbName = `collabdocs-${id}`;
 
@@ -157,6 +160,8 @@ export function EditorPage() {
 
       const persistence = new IndexeddbPersistence(idbName, doc);
       persistenceRef.current = persistence;
+      persistence.on('synced', () => setLocalReady(true));
+
       const wsHost = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3001`;
       const token = localStorage.getItem('token') || '';
       const prov = new WebsocketProvider(`${wsHost}/ws`, `${id}?token=${encodeURIComponent(token)}`, doc);
@@ -169,36 +174,31 @@ export function EditorPage() {
           setConnectionStatus('connected');
         } else if (status === 'connecting') {
           setConnectionStatus('connecting');
-          setSyncStatus('Connecting...');
           setSynced(false);
         } else {
           setConnectionStatus('disconnected');
-          setSyncStatus('Saved');
         }
       });
-
-      const markSaved = () => {
-        setSyncStatus('Saved');
-      };
 
       prov.on('sync', (isSynced: boolean) => {
         setSynced(isSynced);
-        if (isSynced) {
-          setConnectionStatus('connected');
-          if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-          saveTimerRef.current = null;
-          markSaved();
-        }
+        if (isSynced) setConnectionStatus('connected');
       });
+
+      if (prov.wsconnected) setConnectionStatus('connected');
+      if (prov.synced) {
+        setSynced(true);
+        setConnectionStatus('connected');
+      }
 
       doc.on('update', (_update, origin) => {
         if (origin === 'remote') return;
-        setSyncStatus('Saving...');
+        setSaveState('saving');
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         saveTimerRef.current = setTimeout(() => {
           saveTimerRef.current = null;
-          markSaved();
-        }, 500);
+          setSaveState('idle');
+        }, 400);
       });
 
       setYdoc(doc);
@@ -243,6 +243,7 @@ export function EditorPage() {
       setProvider(null);
       setAwareness(null);
       setSynced(false);
+      resetConnectionState();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id, document?.id, document?.operationCount]);

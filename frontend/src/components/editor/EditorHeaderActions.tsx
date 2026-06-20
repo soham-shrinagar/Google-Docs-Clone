@@ -23,8 +23,6 @@ const EXPORT_FORMATS: { id: ExportFormat; label: string }[] = [
 interface EditorHeaderActionsProps {
   editor: Editor | null;
   title: string;
-  lastSaved: Date | null;
-  localReady: boolean;
   presenceUsers: Parameters<typeof PresenceBar>[0]['users'];
   pageZoom: PageZoomMode;
   onPageZoomChange: (mode: PageZoomMode) => void;
@@ -87,8 +85,6 @@ function IconBtn({
 export function EditorHeaderActions({
   editor,
   title,
-  lastSaved,
-  localReady,
   presenceUsers,
   pageZoom,
   onPageZoomChange,
@@ -126,7 +122,7 @@ export function EditorHeaderActions({
   return (
     <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
       <div className="hidden md:flex items-center gap-2 mr-1">
-        <SyncStatus lastSaved={lastSaved} localReady={localReady} />
+        <SyncStatus />
         <PresenceBar users={presenceUsers} />
       </div>
 

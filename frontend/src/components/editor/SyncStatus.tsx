@@ -1,14 +1,12 @@
-import { Cloud, CloudOff, Loader2, Check, HardDrive } from 'lucide-react';
+import { Check, CloudOff, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import { useEditorStore } from '../../store';
-import { formatDistanceToNow } from 'date-fns';
 
 interface SyncStatusProps {
-  lastSaved: Date | null;
-  localReady: boolean;
+  compact?: boolean;
 }
 
-export function SyncStatus({ lastSaved, localReady }: SyncStatusProps) {
+export function SyncStatus({ compact }: SyncStatusProps) {
   const { connectionStatus, syncStatus } = useEditorStore();
 
   const connected = connectionStatus === 'connected';
@@ -17,12 +15,12 @@ export function SyncStatus({ lastSaved, localReady }: SyncStatusProps) {
   const label = saving
     ? syncStatus
     : connected
-      ? 'All changes saved'
+      ? 'Saved'
       : connectionStatus === 'disconnected'
-        ? 'Saved locally — will sync when online'
+        ? 'Offline'
         : syncStatus;
 
-  const Icon = saving ? Loader2 : connected ? Check : connectionStatus === 'disconnected' ? CloudOff : Cloud;
+  const Icon = saving ? Loader2 : connected ? Check : CloudOff;
 
   const badgeClass = saving
     ? 'badge-warn'
@@ -31,30 +29,12 @@ export function SyncStatus({ lastSaved, localReady }: SyncStatusProps) {
       : 'badge-danger';
 
   return (
-    <div className="flex items-center gap-2 text-xs">
-      <span
-        className={clsx(
-          'w-2 h-2 rounded-full shrink-0 ring-2 ring-paper',
-          connected && 'bg-emerald-500',
-          connectionStatus === 'connecting' && 'bg-amber-400 animate-pulse',
-          connectionStatus === 'disconnected' && 'bg-red-400'
-        )}
-        title={connected ? 'Connected' : connectionStatus === 'connecting' ? 'Connecting…' : 'Offline'}
-      />
-      <div className={clsx('badge gap-1.5 px-2.5 py-1', badgeClass)}>
-        <Icon size={13} className={saving ? 'animate-spin' : ''} />
-        {label}
-      </div>
-      {localReady && (
-        <span className="hidden sm:flex items-center text-muted" title="Cached on this device">
-          <HardDrive size={12} />
-        </span>
-      )}
-      {lastSaved && !saving && connected && (
-        <span className="text-muted hidden md:inline">
-          {formatDistanceToNow(lastSaved, { addSuffix: true })}
-        </span>
-      )}
+    <div
+      className={clsx('badge gap-1.5 text-xs', compact ? 'px-2 py-0.5' : 'px-2.5 py-1', badgeClass)}
+      title={connected ? 'Connected and synced' : connectionStatus === 'disconnected' ? 'Editing offline' : syncStatus}
+    >
+      <Icon size={13} className={saving ? 'animate-spin shrink-0' : 'shrink-0'} />
+      <span>{label}</span>
     </div>
   );
 }

@@ -109,11 +109,10 @@ export function EditorPage() {
   const [provider, setProvider] = useState<WebsocketProvider | null>(null);
   const [awareness, setAwareness] = useState<Awareness | null>(null);
   const [synced, setSynced] = useState(false);
-  const [localReady, setLocalReady] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const persistenceRef = useRef<IndexeddbPersistenceType | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
   const ydocRef = useRef<Y.Doc | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     showVersionHistory,
@@ -158,8 +157,6 @@ export function EditorPage() {
 
       const persistence = new IndexeddbPersistence(idbName, doc);
       persistenceRef.current = persistence;
-      persistence.on('synced', () => setLocalReady(true));
-
       const wsHost = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3001`;
       const token = localStorage.getItem('token') || '';
       const prov = new WebsocketProvider(`${wsHost}/ws`, `${id}?token=${encodeURIComponent(token)}`, doc);
@@ -176,22 +173,32 @@ export function EditorPage() {
           setSynced(false);
         } else {
           setConnectionStatus('disconnected');
-          setSyncStatus('Saved locally — will sync when online');
+          setSyncStatus('Saved');
         }
       });
+
+      const markSaved = () => {
+        setSyncStatus('Saved');
+      };
 
       prov.on('sync', (isSynced: boolean) => {
         setSynced(isSynced);
         if (isSynced) {
           setConnectionStatus('connected');
-          setSyncStatus('All changes saved');
-          setLastSaved(new Date());
+          if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+          saveTimerRef.current = null;
+          markSaved();
         }
       });
 
       doc.on('update', (_update, origin) => {
         if (origin === 'remote') return;
         setSyncStatus('Saving...');
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => {
+          saveTimerRef.current = null;
+          markSaved();
+        }, 500);
       });
 
       setYdoc(doc);
@@ -224,6 +231,8 @@ export function EditorPage() {
 
     return () => {
       cancelled = true;
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
       persistenceRef.current?.destroy();
       providerRef.current?.destroy();
       ydocRef.current?.destroy();
@@ -296,16 +305,14 @@ export function EditorPage() {
               onBlur={handleTitleBlur}
               className="text-base font-semibold bg-transparent border-none outline-none min-w-0 flex-1 text-ink truncate focus:ring-0 max-w-md"
             />
-            <div className="md:hidden flex items-center gap-1.5 shrink-0">
-              <SyncStatus lastSaved={lastSaved} localReady={localReady} />
+            <div className="md:hidden shrink-0">
+              <SyncStatus compact />
             </div>
           </div>
 
           <EditorHeaderActions
             editor={editor}
             title={title}
-            lastSaved={lastSaved}
-            localReady={localReady}
             presenceUsers={presenceUsers}
             pageZoom={pageZoom}
             onPageZoomChange={handlePageZoomChange}

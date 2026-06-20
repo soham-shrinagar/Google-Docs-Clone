@@ -195,7 +195,16 @@ export async function initPrisma(): Promise<void> {
 }
 
 export type { User } from '../generated/prisma/client.js';
-export { PermissionRole, ActivityType, NotificationType, Prisma } from '../generated/prisma/client.js';
+export {
+  PermissionRole,
+  ActivityType,
+  NotificationType,
+  AiRequestType,
+  AiRequestStatus,
+  AiRewriteAction,
+  SummaryFormat,
+  Prisma,
+} from '../generated/prisma/client.js';
 
 export async function verifyDatabaseConnection(retries = 6) {
   if (!baseClient) throw new Error('initPrisma() not called');

@@ -118,20 +118,3 @@ export function useVersionHistory(documentId: string) {
     enabled: !!documentId,
   });
 }
-
-export function useAnalytics() {
-  return useQuery({
-    queryKey: ['analytics'],
-    queryFn: () => api.getAnalytics(),
-    refetchInterval: 3000,
-  });
-}
-
-export function useNotifications() {
-  return useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => api.getNotifications(),
-    select: (data) => data.notifications,
-    refetchInterval: 10000,
-  });
-}

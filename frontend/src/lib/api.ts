@@ -131,10 +131,14 @@ export const api = {
   },
 
   shareDocument(id: string, email: string, role: string) {
-    return request(API_URL, `/api/documents/${id}/share`, {
-      method: 'POST',
-      body: JSON.stringify({ email, role }),
-    });
+    return request<{ permission: unknown; emailSent: boolean; docUrl: string }>(
+      API_URL,
+      `/api/documents/${id}/share`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ email, role }),
+      }
+    );
   },
 
   createShareLink(id: string) {
@@ -195,15 +199,138 @@ export const api = {
     );
   },
 
-  getNotifications() {
-    return request<{ notifications: import('../types').Notification[] }>(API_URL, '/api/notifications');
+  getComments(documentId: string) {
+    return request<{ comments: import('../types').DocumentComment[] }>(
+      API_URL,
+      `/api/documents/${documentId}/comments`
+    );
   },
 
-  markNotificationRead(id: string) {
-    return request(API_URL, `/api/notifications/${id}/read`, { method: 'PATCH' });
+  createComment(documentId: string, data: { content: string; quote?: string; parentId?: string }) {
+    return request<{ comment: import('../types').DocumentComment }>(
+      API_URL,
+      `/api/documents/${documentId}/comments`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
   },
 
-  getAnalytics() {
-    return request<import('../types').AnalyticsMetrics>(API_URL, '/api/notifications/analytics');
+  resolveComment(documentId: string, commentId: string, resolved: boolean) {
+    return request<{ comment: import('../types').DocumentComment }>(
+      API_URL,
+      `/api/documents/${documentId}/comments/${commentId}`,
+      { method: 'PATCH', body: JSON.stringify({ resolved }) }
+    );
+  },
+
+  aiRewrite(documentId: string, data: { text: string; action: import('./aiTypes').AiRewriteAction; targetLanguage?: string }) {
+    return request<{ result: string; rewriteId: string; requestId: string }>(
+      API_URL,
+      `/api/documents/${documentId}/ai/rewrite`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  },
+
+  aiRewriteOutcome(documentId: string, rewriteId: string, accepted: boolean) {
+    return request(API_URL, `/api/documents/${documentId}/ai/rewrite/${rewriteId}/outcome`, {
+      method: 'POST',
+      body: JSON.stringify({ accepted }),
+    });
+  },
+
+  aiGrammarCheck(documentId: string, text: string) {
+    return request<{ issues: import('./aiTypes').GrammarIssue[] }>(
+      API_URL,
+      `/api/documents/${documentId}/ai/grammar`,
+      { method: 'POST', body: JSON.stringify({ text }) }
+    );
+  },
+
+  aiSpellCheck(documentId: string, text: string) {
+    return request<{ issues: import('./aiTypes').SpellIssue[] }>(
+      API_URL,
+      `/api/documents/${documentId}/ai/spell-check`,
+      { method: 'POST', body: JSON.stringify({ text }) }
+    );
+  },
+
+  listDictionaryWords() {
+    return request<{ words: string[] }>(API_URL, '/api/ai/dictionary');
+  },
+
+  addDictionaryWord(word: string) {
+    return request<{ word: string }>(API_URL, '/api/ai/dictionary', {
+      method: 'POST',
+      body: JSON.stringify({ word }),
+    });
+  },
+
+  aiSummarize(documentId: string, data: { text: string; format: import('./aiTypes').SummaryFormat }) {
+    return request<{ summary: string; format: string }>(
+      API_URL,
+      `/api/documents/${documentId}/ai/summarize`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  },
+
+  aiChat(documentId: string, data: {
+    question: string;
+    documentText: string;
+    history?: { role: 'user' | 'assistant'; content: string }[];
+  }) {
+    return request<{ answer: string }>(
+      API_URL,
+      `/api/documents/${documentId}/ai/chat`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  },
+
+  aiInsights(documentId: string, data: { text: string; structure?: Record<string, number> }) {
+    return request<{ insights: Record<string, unknown> }>(
+      API_URL,
+      `/api/documents/${documentId}/ai/insights`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  },
+
+  aiSaveTranscript(documentId: string, data: {
+    transcript: string;
+    language: string;
+    insertMode: string;
+    durationMs?: number;
+  }) {
+    return request(API_URL, `/api/documents/${documentId}/ai/speech/transcript`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  aiVoiceCommand(documentId: string, transcript: string) {
+    return request<{ isCommand: boolean; action: string | null; payload: Record<string, unknown> }>(
+      API_URL,
+      `/api/documents/${documentId}/ai/voice-command`,
+      { method: 'POST', body: JSON.stringify({ transcript }) }
+    );
+  },
+
+  aiGrammarOutcome(accepted: boolean) {
+    return request(API_URL, '/api/ai/grammar/outcome', {
+      method: 'POST',
+      body: JSON.stringify({ accepted }),
+    });
+  },
+
+  aiUsageStats() {
+    return request<{
+      totals: Record<string, number>;
+      daily: Array<Record<string, number | string>>;
+      recentRequests: Array<{
+        id: string;
+        type: string;
+        action: string | null;
+        status: string;
+        createdAt: string;
+        documentId: string | null;
+      }>;
+    }>(API_URL, '/api/ai/usage');
   },
 };

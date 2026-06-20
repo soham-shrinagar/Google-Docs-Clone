@@ -1,0 +1,15 @@
+export const CODE_LANGUAGES = [
+  { id: 'javascript', label: 'JavaScript' },
+  { id: 'typescript', label: 'TypeScript' },
+  { id: 'python', label: 'Python' },
+  { id: 'cpp', label: 'C++' },
+  { id: 'java', label: 'Java' },
+  { id: 'go', label: 'Go' },
+  { id: 'rust', label: 'Rust' },
+  { id: 'sql', label: 'SQL' },
+  { id: 'json', label: 'JSON' },
+  { id: 'bash', label: 'Bash' },
+  { id: 'html', label: 'HTML' },
+  { id: 'css', label: 'CSS' },
+  { id: 'plaintext', label: 'Plain Text' },
+] as const;

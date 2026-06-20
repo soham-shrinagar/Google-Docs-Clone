@@ -8,19 +8,33 @@ interface ThemeToggleProps {
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
       className={clsx(
-        'p-2 rounded-lg text-muted hover:text-ink hover:bg-canvas transition-colors',
+        'relative flex items-center gap-1 p-1 rounded-full border transition-all',
+        'border-line bg-surface hover:border-accent/30',
         className
       )}
-      aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-      title={theme === 'light' ? 'Dark mode' : 'Light mode'}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Light mode' : 'Dark mode'}
     >
-      {theme === 'light' ? <Moon size={18} strokeWidth={1.75} /> : <Sun size={18} strokeWidth={1.75} />}
+      <span
+        className={clsx(
+          'absolute top-1 bottom-1 w-[calc(50%-2px)] rounded-full transition-all duration-300',
+          'bg-accent shadow-sm',
+          isDark ? 'left-[calc(50%+1px)]' : 'left-1'
+        )}
+      />
+      <span className={clsx('relative z-10 p-1.5 rounded-full transition-colors', !isDark && 'text-white')}>
+        <Sun size={15} strokeWidth={2} />
+      </span>
+      <span className={clsx('relative z-10 p-1.5 rounded-full transition-colors', isDark && 'text-white')}>
+        <Moon size={15} strokeWidth={2} />
+      </span>
     </button>
   );
 }

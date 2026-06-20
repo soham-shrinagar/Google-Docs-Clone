@@ -63,7 +63,7 @@ async function main() {
     process.exit(1);
   }
 
-  server.listen(config.port, async () => {
+  server.listen(config.port, '0.0.0.0', async () => {
     console.log(`CollabDocs server running on port ${config.port}`);
     console.log(`WebSocket endpoint: ws://localhost:${config.port}/ws`);
     try {

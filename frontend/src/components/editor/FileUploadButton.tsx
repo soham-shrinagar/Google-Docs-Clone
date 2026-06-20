@@ -1,16 +1,10 @@
 import { useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { Upload, Loader2 } from 'lucide-react';
-import { api } from '../../lib/api';
-import { buildPdfContent, buildImageContent } from './PdfEmbed';
 import clsx from 'clsx';
-
-const API_BASE = import.meta.env.VITE_API_URL || '';
-
-export function resolveUploadUrl(path: string): string {
-  if (path.startsWith('http')) return path;
-  return `${API_BASE}${path}`;
-}
+import { api } from '../../lib/api';
+import { resolveUploadUrl } from '../../lib/uploads';
+import { insertUploadedFileIntoEditor } from '../../lib/uploadProcessor';
 
 interface FileUploadButtonProps {
   editor: Editor | null;
@@ -25,18 +19,21 @@ export function FileUploadButton({ editor, className }: FileUploadButtonProps) {
     if (!editor) return;
     setUploading(true);
     try {
-      const result = await api.uploadFile(file);
-      const url = resolveUploadUrl(result.url);
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+      const isSimpleImage =
+        file.type.startsWith('image/') &&
+        !['pdf', 'docx', 'txt', 'md'].includes(ext);
 
-      if (result.type === 'image') {
+      if (isSimpleImage) {
+        const result = await api.uploadFile(file);
+        const url = resolveUploadUrl(result.url);
         editor.chain().focus().setImage({ src: url, alt: result.originalName }).run();
-      } else {
-        editor
-          .chain()
-          .focus()
-          .insertPdfEmbed({ src: url, title: result.originalName, height: 720 })
-          .run();
+        return;
       }
+
+      await insertUploadedFileIntoEditor(file, (content) => {
+        editor.chain().focus().insertContent(content).run();
+      });
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -49,7 +46,7 @@ export function FileUploadButton({ editor, className }: FileUploadButtonProps) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf"
+        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,text/plain,.txt,text/markdown,.md"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -66,21 +63,10 @@ export function FileUploadButton({ editor, className }: FileUploadButtonProps) {
           uploading && 'opacity-50',
           className
         )}
-        title="Upload image or PDF"
+        title="Upload PDF, Word, text, or image"
       >
         {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
       </button>
     </>
   );
-}
-
-export async function buildUploadInitialContent(file: File) {
-  const result = await api.uploadFile(file);
-  const url = resolveUploadUrl(result.url);
-  const title = file.name.replace(/\.[^.]+$/, '');
-
-  if (result.type === 'image') {
-    return buildImageContent(url, result.originalName, title);
-  }
-  return buildPdfContent(url, result.originalName, title);
 }

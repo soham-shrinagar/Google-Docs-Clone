@@ -1,13 +1,6 @@
 import { create } from 'zustand';
 import { persistTheme, type Theme } from '../lib/theme.js';
-import type {
-  User,
-  ConnectionStatus,
-  DistributedEvent,
-  Notification,
-  NetworkSimSettings,
-  PresenceUser,
-} from '../types';
+import type { User, ConnectionStatus, PresenceUser } from '../types';
 
 interface AuthState {
   user: User | null;
@@ -26,67 +19,23 @@ export const useAuthStore = create<AuthState>((set) => ({
 interface EditorState {
   connectionStatus: ConnectionStatus;
   syncStatus: string;
-  crdtEvents: DistributedEvent[];
-  showCrdtInternals: boolean;
-  showNetworkSim: boolean;
-  showAnalytics: boolean;
   showVersionHistory: boolean;
   presenceUsers: PresenceUser[];
-  networkSim: NetworkSimSettings;
   setConnectionStatus: (status: ConnectionStatus) => void;
   setSyncStatus: (status: string) => void;
-  addCrdtEvent: (event: DistributedEvent) => void;
-  clearCrdtEvents: () => void;
-  toggleCrdtInternals: () => void;
-  toggleNetworkSim: () => void;
-  toggleAnalytics: () => void;
   toggleVersionHistory: () => void;
   setPresenceUsers: (users: PresenceUser[]) => void;
-  updateNetworkSim: (settings: Partial<NetworkSimSettings>) => void;
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
   connectionStatus: 'connecting',
-  syncStatus: 'Initializing...',
-  crdtEvents: [],
-  showCrdtInternals: false,
-  showNetworkSim: false,
-  showAnalytics: false,
+  syncStatus: 'Connecting...',
   showVersionHistory: false,
   presenceUsers: [],
-  networkSim: { latency: 0, packetLoss: 0, bandwidth: 0, disconnected: false },
   setConnectionStatus: (status) => set({ connectionStatus: status }),
   setSyncStatus: (status) => set({ syncStatus: status }),
-  addCrdtEvent: (event) =>
-    set((state) => ({ crdtEvents: [event, ...state.crdtEvents].slice(0, 200) })),
-  clearCrdtEvents: () => set({ crdtEvents: [] }),
-  toggleCrdtInternals: () => set((s) => ({ showCrdtInternals: !s.showCrdtInternals })),
-  toggleNetworkSim: () => set((s) => ({ showNetworkSim: !s.showNetworkSim })),
-  toggleAnalytics: () => set((s) => ({ showAnalytics: !s.showAnalytics })),
   toggleVersionHistory: () => set((s) => ({ showVersionHistory: !s.showVersionHistory })),
   setPresenceUsers: (users) => set({ presenceUsers: users }),
-  updateNetworkSim: (settings) =>
-    set((s) => ({ networkSim: { ...s.networkSim, ...settings } })),
-}));
-
-interface NotificationState {
-  notifications: Notification[];
-  setNotifications: (notifications: Notification[]) => void;
-  addNotification: (notification: Notification) => void;
-  markRead: (id: string) => void;
-}
-
-export const useNotificationStore = create<NotificationState>((set) => ({
-  notifications: [],
-  setNotifications: (notifications) => set({ notifications }),
-  addNotification: (notification) =>
-    set((s) => ({ notifications: [notification, ...s.notifications] })),
-  markRead: (id) =>
-    set((s) => ({
-      notifications: s.notifications.map((n) =>
-        n.id === id ? { ...n, isRead: true } : n
-      ),
-    })),
 }));
 
 interface DashboardState {

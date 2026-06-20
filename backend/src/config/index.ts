@@ -13,13 +13,24 @@ export const config = {
     secret: process.env.JWT_SECRET || 'dev-secret-change-me',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
-  session: {
-    secret: process.env.SESSION_SECRET || 'dev-session-secret',
-  },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/api/auth/google/callback',
+  },
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'CollabDocs <noreply@collabdocs.local>',
+  },
+  ai: {
+    provider: process.env.AI_PROVIDER || 'openai',
+    openaiApiKey: process.env.OPENAI_API_KEY || '',
+    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    whisperModel: process.env.OPENAI_WHISPER_MODEL || 'whisper-1',
   },
   isProduction: process.env.NODE_ENV === 'production',
 };

@@ -40,7 +40,7 @@ export function TemplatePicker({ open, onClose, onSelect, onUpload, loading }: T
         style={{ background: 'var(--theme-overlay)' }}
         onClick={onClose}
       />
-      <div className="relative bg-paper rounded-2xl border border-line shadow-2xl w-full max-w-3xl modal-shell animate-fade-up">
+      <div className="relative bg-paper rounded-2xl border border-line shadow-2xl w-full max-w-3xl modal-shell animate-fade-up overflow-hidden">
         <div className="flex items-center justify-between px-6 py-5 border-b border-line shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-ink">Create a document</h2>
@@ -54,7 +54,7 @@ export function TemplatePicker({ open, onClose, onSelect, onUpload, loading }: T
         <label className="mx-6 mt-5 mb-0 flex items-center gap-4 py-5 px-5 border-2 border-dashed border-line rounded-xl cursor-pointer hover:border-accent/40 hover:bg-accent-soft/30 transition-colors shrink-0">
           <input
             type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,text/plain,.txt,text/markdown,.md"
             className="hidden"
             onChange={handleFileChange}
             disabled={loading}
@@ -68,7 +68,7 @@ export function TemplatePicker({ open, onClose, onSelect, onUpload, loading }: T
           </div>
           <div className="min-w-0">
             <p className="font-medium text-ink">Upload from computer</p>
-            <p className="text-sm text-muted">PDF or image — up to 15 MB</p>
+            <p className="text-sm text-muted">PDF, Word, text, or image — up to 15 MB</p>
           </div>
         </label>
 

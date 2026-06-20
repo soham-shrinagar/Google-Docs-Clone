@@ -46,23 +46,34 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col justify-between bg-ink text-paper p-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-dot-grid opacity-10" />
+      <div className="hidden lg:flex flex-col justify-between hero-banner text-paper p-12 relative overflow-hidden">
+        <div className="absolute inset-0 bg-dot-grid opacity-[0.07]" />
+        <div className="absolute -right-20 top-1/3 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+        <div className="absolute -left-10 bottom-20 w-60 h-60 rounded-full bg-accent/30 blur-3xl pointer-events-none" />
         <div className="relative">
           <Logo size="md" textClassName="text-paper" />
         </div>
-        <div className="relative max-w-md">
-          <h2 className="text-3xl font-semibold leading-snug tracking-tight">
-            Documents that stay in sync, even when you&apos;re offline.
+        <div className="relative max-w-md space-y-6">
+          <p className="text-sm font-semibold uppercase tracking-widest text-accent-muted">CollabDocs</p>
+          <h2 className="text-4xl font-bold leading-tight tracking-tight">
+            Documents that stay in sync, even offline.
           </h2>
-          <p className="text-paper/60 mt-4 leading-relaxed">
+          <p className="text-paper/70 text-lg leading-relaxed">
             Real-time collaboration, version history, and sharing — built for teams who write together.
           </p>
+          <div className="flex gap-6 pt-2">
+            {['Live cursors', 'Version history', 'Offline sync'].map((item) => (
+              <span key={item} className="text-sm text-paper/60 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-muted" />
+                {item}
+              </span>
+            ))}
+          </div>
         </div>
-        <p className="relative text-sm text-paper/40">© CollabDocs</p>
+        <p className="relative text-sm text-paper/35">© CollabDocs</p>
       </div>
 
-      <div className="flex items-center justify-center p-6 sm:p-10 bg-canvas relative">
+      <div className="flex items-center justify-center p-6 sm:p-10 bg-mesh relative min-h-screen">
         <div className="absolute top-5 right-5 sm:top-8 sm:right-8">
           <ThemeToggle />
         </div>
@@ -71,16 +82,16 @@ export function LoginPage() {
             <Logo size="sm" />
           </Link>
 
-          <div className="bg-paper rounded-2xl border border-line shadow-sm p-8">
-            <h1 className="text-xl font-semibold text-ink mb-1">
+          <div className="glass-panel rounded-2xl p-8 shadow-xl">
+            <h1 className="text-2xl font-bold text-ink mb-1">
               {isRegister ? 'Create your account' : 'Welcome back'}
             </h1>
             <p className="text-sm text-muted mb-6">
-              {isRegister ? 'Get started in seconds' : 'Sign in to continue to your workspace'}
+              {isRegister ? 'Get started in seconds — it\'s free' : 'Sign in to continue to your workspace'}
             </p>
 
             {error && (
-              <div className="text-sm text-ink bg-canvas border border-line px-4 py-3 rounded-xl mb-4">{error}</div>
+              <div className="text-sm badge badge-danger px-4 py-3 rounded-xl mb-4 w-full justify-start">{error}</div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -168,12 +179,12 @@ export function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-canvas overflow-hidden">
-      <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-mesh overflow-hidden">
+      <nav className="max-w-6xl mx-auto px-6 h-[3.75rem] flex items-center justify-between glass-panel border-b border-line/50 sticky top-0 z-20">
         <Logo size="sm" />
         <div className="flex items-center gap-2 sm:gap-3">
           <ThemeToggle />
-          <Link to="/login" className="text-sm text-muted hover:text-ink px-3 py-2">
+          <Link to="/login" className="btn-ghost hidden sm:inline-flex">
             Sign in
           </Link>
           <button type="button" onClick={() => navigate('/login')} className="btn-primary !py-2 !px-4">
@@ -182,17 +193,18 @@ export function LandingPage() {
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-6 pt-12 pb-24">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <main className="max-w-6xl mx-auto px-6 pt-16 pb-24">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <div className="animate-fade-up">
-            <p className="text-sm font-medium text-accent mb-4">Real-time collaboration</p>
-            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.15] text-ink">
-              Write together.<br />Stay in sync.
+            <p className="text-sm font-semibold text-gradient mb-4 tracking-wide">Real-time collaboration</p>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-ink">
+              Write together.<br />
+              <span className="text-gradient">Stay in sync.</span>
             </h1>
-            <p className="text-lg text-muted mt-5 leading-relaxed max-w-lg">
+            <p className="text-lg text-muted mt-6 leading-relaxed max-w-lg">
               A modern document editor with live cursors, offline editing, version history, and effortless sharing.
             </p>
-            <div className="flex flex-wrap gap-3 mt-8">
+            <div className="flex flex-wrap gap-3 mt-10">
               <button type="button" onClick={() => navigate('/login')} className="btn-primary">
                 Start for free
               </button>
@@ -202,43 +214,43 @@ export function LandingPage() {
             </div>
           </div>
 
-          <div className="relative animate-fade-up lg:pl-4" style={{ animationDelay: '0.1s' }}>
-            <div className="absolute -inset-4 bg-accent/10 rounded-3xl blur-2xl" />
-            <div className="relative bg-paper rounded-2xl border border-line shadow-xl overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-line bg-canvas">
-                <div className="w-2.5 h-2.5 rounded-full bg-line" />
-                <div className="w-2.5 h-2.5 rounded-full bg-line" />
-                <div className="w-2.5 h-2.5 rounded-full bg-line" />
-                <span className="ml-2 text-xs text-muted">Quarterly Report — CollabDocs</span>
+          <div className="relative animate-fade-up lg:pl-4" style={{ animationDelay: '0.12s' }}>
+            <div className="absolute -inset-6 bg-accent/15 rounded-[2rem] blur-3xl" />
+            <div className="relative glass-panel rounded-2xl shadow-2xl overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-line bg-surface/80">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
+                <span className="ml-2 text-xs text-muted font-medium">Quarterly Report — CollabDocs</span>
               </div>
-              <div className="p-8 space-y-3">
-                <div className="h-3 w-1/3 bg-accent/30 rounded-full" />
+              <div className="p-8 space-y-3 bg-paper">
+                <div className="h-3.5 w-1/3 rounded-full bg-gradient-to-r from-accent to-violet-400 opacity-80" />
                 <div className="h-2 w-full preview-line rounded-full" />
                 <div className="h-2 w-[90%] preview-line rounded-full" />
                 <div className="h-2 w-4/5 preview-line rounded-full" />
-                <div className="h-2 w-full preview-line rounded-full mt-6" />
+                <div className="h-2 w-full preview-line rounded-full mt-8" />
                 <div className="h-2 w-3/4 preview-line rounded-full" />
-                <div className="flex gap-2 mt-8">
-                  <div className="h-6 w-6 rounded-full bg-accent text-white text-[10px] flex items-center justify-center font-bold">A</div>
-                  <div className="h-6 w-6 rounded-full bg-ink/70 text-white text-[10px] flex items-center justify-center font-bold -ml-3 ring-2 ring-paper">B</div>
-                  <span className="text-xs text-muted self-center ml-1">2 editing now</span>
+                <div className="flex gap-2 mt-10 items-center">
+                  <div className="h-7 w-7 rounded-full bg-accent text-white text-[10px] flex items-center justify-center font-bold shadow-md">A</div>
+                  <div className="h-7 w-7 rounded-full bg-violet-500 text-white text-[10px] flex items-center justify-center font-bold -ml-3 ring-2 ring-paper shadow-md">B</div>
+                  <span className="text-xs text-muted font-medium ml-1">2 editing now</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <section id="features" className="mt-28 grid sm:grid-cols-3 gap-6">
+        <section id="features" className="mt-32 grid sm:grid-cols-3 gap-6">
           {[
-            { title: 'Live sync', desc: 'See edits and cursors from collaborators in real time, powered by CRDTs.' },
-            { title: 'Version history', desc: 'Every change is tracked. Restore or reconstruct any point in time.' },
-            { title: 'Share & collaborate', desc: 'Invite by link or email with viewer, editor, or owner permissions.' },
+            { title: 'Live sync', desc: 'See edits and cursors from collaborators in real time, powered by CRDTs.', color: 'from-indigo-500 to-violet-500' },
+            { title: 'Version history', desc: 'Every change is tracked. Restore or reconstruct any point in time.', color: 'from-violet-500 to-purple-500' },
+            { title: 'Share & collaborate', desc: 'Invite by link or email with viewer, editor, or owner permissions.', color: 'from-blue-500 to-indigo-500' },
           ].map((f) => (
-            <div key={f.title} className="p-6 bg-paper rounded-2xl border border-line card-hover">
-              <div className="w-9 h-9 rounded-xl bg-accent-soft flex items-center justify-center mb-4">
-                <div className="w-2 h-2 rounded-full bg-accent" />
+            <div key={f.title} className="p-6 bg-paper rounded-2xl card-interactive">
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center mb-5 shadow-lg`}>
+                <div className="w-2.5 h-2.5 rounded-full bg-white/90" />
               </div>
-              <h3 className="font-semibold text-ink mb-2">{f.title}</h3>
+              <h3 className="font-bold text-ink mb-2 text-lg">{f.title}</h3>
               <p className="text-sm text-muted leading-relaxed">{f.desc}</p>
             </div>
           ))}

@@ -11,14 +11,9 @@ import { PermissionRole, NotificationType } from '../lib/prisma.js';
 import { versionService } from './version.service.js';
 import { presenceService } from './presence.service.js';
 import { notificationService } from './notification.service.js';
-import { analyticsService } from './analytics.service.js';
-import type { DistributedEvent } from '../utils/vectorClock.js';
-import { stateVectorToClock, mergeVectorClocks } from '../utils/vectorClock.js';
 
 const messageSync = 0;
 const messageAwareness = 1;
-const messageAuth = 2;
-const messageEvent = 3;
 
 interface WsClient extends WebSocket {
   isAlive?: boolean;
@@ -37,7 +32,6 @@ interface DocRoom {
 
 export class CrdtSyncService {
   private rooms = new Map<string, DocRoom>();
-  private eventListeners: Array<(event: DistributedEvent) => void> = [];
   private persistQueues = new Map<string, Promise<void>>();
 
   private enqueuePersist(documentId: string, task: () => Promise<void>) {
@@ -46,14 +40,6 @@ export class CrdtSyncService {
       console.error(`Persist queue error for ${documentId}:`, err);
     });
     this.persistQueues.set(documentId, next);
-  }
-
-  onEvent(listener: (event: DistributedEvent) => void) {
-    this.eventListeners.push(listener);
-  }
-
-  private emitEvent(event: DistributedEvent) {
-    this.eventListeners.forEach((l) => l(event));
   }
 
   async getOrCreateRoom(documentId: string): Promise<DocRoom> {
@@ -75,17 +61,12 @@ export class CrdtSyncService {
 
         this.enqueuePersist(documentId, async () => {
           try {
-            const start = Date.now();
-            const event = await versionService.storeOperation(
+            await versionService.storeOperation(
               documentId,
               client.userId!,
               update,
               client.userId!
             );
-            analyticsService.recordOperation();
-            analyticsService.recordSyncTime(Date.now() - start);
-            this.emitEvent(event);
-            this.broadcastToRoom(documentId, messageEvent, event, client);
           } catch (err) {
             console.error(`Failed to persist operation for ${documentId}:`, err);
           }
@@ -160,9 +141,7 @@ export class CrdtSyncService {
       });
 
       ws.on('message', (data: Buffer) => {
-        const receiveTime = Date.now();
         this.handleMessage(ws, room, new Uint8Array(data));
-        analyticsService.recordWsLatency(Date.now() - receiveTime);
         presenceService.updateSessionActivity(ws.socketId!);
       });
 
@@ -201,24 +180,9 @@ export class CrdtSyncService {
 
     switch (messageType) {
       case messageSync: {
-        const mergeStart = Date.now();
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, messageSync);
-        const syncType = syncProtocol.readSyncMessage(decoder, encoder, room.doc, ws);
-        if (syncType === syncProtocol.messageYjsSyncStep2) {
-          analyticsService.recordMerge(Date.now() - mergeStart);
-          const mergeEvent: DistributedEvent = {
-            id: crypto.randomUUID(),
-            type: 'merge',
-            userId: ws.userId || 'unknown',
-            documentId: ws.documentId || '',
-            timestamp: Date.now(),
-            lamportTimestamp: Date.now(),
-            vectorClock: stateVectorToClock(Y.encodeStateVector(room.doc)),
-            description: 'CRDT state merged from remote client',
-          };
-          this.emitEvent(mergeEvent);
-        }
+        syncProtocol.readSyncMessage(decoder, encoder, room.doc, ws);
         if (encoding.length(encoder) > 1) {
           ws.send(encoding.toUint8Array(encoder));
         }
@@ -233,29 +197,6 @@ export class CrdtSyncService {
         break;
       }
     }
-  }
-
-  private broadcastToRoom(
-    documentId: string,
-    type: number,
-    payload: unknown,
-    exclude?: WsClient
-  ) {
-    const room = this.rooms.get(documentId);
-    if (!room) return;
-
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, type);
-    if (type === messageEvent) {
-      encoding.writeVarString(encoder, JSON.stringify(payload));
-    }
-
-    const message = encoding.toUint8Array(encoder);
-    room.clients.forEach((client) => {
-      if (client !== exclude && client.readyState === 1) {
-        client.send(message);
-      }
-    });
   }
 
   setupAwarenessForwarding(documentId: string) {
@@ -276,14 +217,6 @@ export class CrdtSyncService {
         if (client.readyState === 1) client.send(message);
       });
     });
-  }
-
-  getRoomStats() {
-    const stats: Record<string, number> = {};
-    this.rooms.forEach((room, id) => {
-      stats[id] = room.clients.size;
-    });
-    return stats;
   }
 }
 

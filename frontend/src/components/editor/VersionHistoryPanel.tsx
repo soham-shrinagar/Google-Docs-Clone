@@ -1,4 +1,3 @@
-import { useEditorStore } from '../../store';
 import { format } from 'date-fns';
 import { X, GitBranch, Clock } from 'lucide-react';
 import type { DocumentVersion, DocumentOperation } from '../../types';

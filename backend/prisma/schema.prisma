@@ -37,6 +37,49 @@ enum NotificationType {
   DOCUMENT_SAVED
 }
 
+enum AiRequestType {
+  REWRITE
+  GRAMMAR
+  SUMMARIZE
+  CHAT
+  INSIGHTS
+  SPEECH
+  VOICE_COMMAND
+  SPELL_CHECK
+}
+
+enum AiRequestStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AiRewriteAction {
+  IMPROVE
+  FIX_GRAMMAR
+  PROFESSIONAL
+  CASUAL
+  SHORTEN
+  EXPAND
+  SIMPLIFY
+  TECHNICAL
+  FORMAL
+  FRIENDLY
+  SUMMARIZE
+  EXPLAIN
+  TRANSLATE
+}
+
+enum SummaryFormat {
+  BRIEF
+  DETAILED
+  BULLETS
+  EXECUTIVE
+  MEETING_NOTES
+  ACTION_ITEMS
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
@@ -59,6 +102,14 @@ model User {
   auditLogs         AuditLog[]
   pinnedDocuments   PinnedDocument[]
   recentlyOpened    RecentlyOpened[]
+  comments          DocumentComment[]
+  aiRequests        AiRequest[]
+  aiRewrites        AiRewrite[]
+  speechTranscripts SpeechTranscript[]
+  userDictionary    UserDictionaryWord[]
+  grammarSuggestions GrammarSuggestion[]
+  aiUsageStats      AiUsageStat[]
+  documentSummaries DocumentSummary[]
 
   @@map("users")
 }
@@ -85,6 +136,12 @@ model Document {
   notifications   Notification[]
   pinnedBy        PinnedDocument[]
   recentlyOpened  RecentlyOpened[]
+  comments        DocumentComment[]
+  aiRequests      AiRequest[]
+  aiRewrites      AiRewrite[]
+  speechTranscripts SpeechTranscript[]
+  grammarSuggestions GrammarSuggestion[]
+  documentSummaries DocumentSummary[]
 
   @@index([ownerId])
   @@index([updatedAt])
@@ -273,4 +330,151 @@ model RecentlyOpened {
   @@unique([userId, documentId])
   @@index([userId, openedAt])
   @@map("recently_opened")
+}
+
+model DocumentComment {
+  id         String   @id @default(uuid())
+  documentId String
+  userId     String
+  content    String
+  quote      String?
+  parentId   String?
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  document Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   DocumentComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  DocumentComment[] @relation("CommentReplies")
+
+  @@index([documentId, createdAt])
+  @@map("document_comments")
+}
+
+model AiRequest {
+  id           String          @id @default(uuid())
+  userId       String
+  documentId   String?
+  type         AiRequestType
+  status       AiRequestStatus @default(PENDING)
+  action       String?
+  inputTokens  Int?
+  outputTokens Int?
+  latencyMs    Int?
+  metadata     Json?
+  error        String?
+  createdAt    DateTime        @default(now())
+  completedAt  DateTime?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([documentId, createdAt])
+  @@map("ai_requests")
+}
+
+model AiRewrite {
+  id           String          @id @default(uuid())
+  userId       String
+  documentId   String
+  requestId    String?
+  action       AiRewriteAction
+  originalText String
+  resultText   String
+  accepted     Boolean?
+  createdAt    DateTime        @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt])
+  @@index([userId])
+  @@map("ai_rewrites")
+}
+
+model SpeechTranscript {
+  id           String   @id @default(uuid())
+  userId       String
+  documentId   String
+  language     String   @default("en-US")
+  transcript   String
+  durationMs   Int?
+  insertMode   String?
+  wordCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt])
+  @@map("speech_transcripts")
+}
+
+model UserDictionaryWord {
+  id        String   @id @default(uuid())
+  userId    String
+  word      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, word])
+  @@index([userId])
+  @@map("user_dictionary")
+}
+
+model GrammarSuggestion {
+  id           String   @id @default(uuid())
+  userId       String
+  documentId   String
+  originalText String
+  suggestion   String
+  explanation  String?
+  issueType    String
+  accepted     Boolean?
+  ignored      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt])
+  @@map("grammar_suggestions")
+}
+
+model AiUsageStat {
+  id                  String   @id @default(uuid())
+  userId              String
+  date                DateTime @db.Date
+  rewriteCount        Int      @default(0)
+  grammarFixCount     Int      @default(0)
+  dictationCount      Int      @default(0)
+  summarizeCount      Int      @default(0)
+  chatCount           Int      @default(0)
+  acceptedSuggestions Int      @default(0)
+  rejectedSuggestions Int      @default(0)
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("ai_usage_stats")
+}
+
+model DocumentSummary {
+  id         String        @id @default(uuid())
+  userId     String
+  documentId String
+  format     SummaryFormat
+  content    String
+  sourceHash String?
+  createdAt  DateTime      @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt])
+  @@map("document_summaries")
 }

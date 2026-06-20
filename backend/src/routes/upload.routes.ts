@@ -13,7 +13,10 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.pdf']);
+const ALLOWED_EXT = new Set([
+  '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.pdf',
+  '.docx', '.txt', '.md',
+]);
 
 const MIME_TO_EXT: Record<string, string> = {
   'image/jpeg': '.jpg',
@@ -22,6 +25,9 @@ const MIME_TO_EXT: Record<string, string> = {
   'image/webp': '.webp',
   'image/svg+xml': '.svg',
   'application/pdf': '.pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  'text/plain': '.txt',
+  'text/markdown': '.md',
   'application/octet-stream': '',
 };
 
@@ -49,7 +55,7 @@ const upload = multer({
     if (resolveExtension(file.mimetype, file.originalname)) {
       cb(null, true);
     } else {
-      cb(new Error('Only images (JPEG, PNG, GIF, WebP, SVG) and PDF files are allowed'));
+      cb(new Error('Only images, PDF, Word (.docx), and text files are allowed'));
     }
   },
 });
@@ -72,6 +78,10 @@ router.post('/', authenticate, (req: AuthRequest, res: Response) => {
 
       const ext = path.extname(req.file.filename).toLowerCase();
       const isPdf = req.file.mimetype === 'application/pdf' || ext === '.pdf';
+      const isDoc =
+        req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        ext === '.docx';
+      const isText = ext === '.txt' || ext === '.md' || req.file.mimetype.startsWith('text/');
       const url = `/uploads/${req.file.filename}`;
 
       res.status(201).json({
@@ -80,7 +90,7 @@ router.post('/', authenticate, (req: AuthRequest, res: Response) => {
         originalName: req.file.originalname,
         mimeType: req.file.mimetype,
         size: req.file.size,
-        type: isPdf ? 'pdf' : 'image',
+        type: isPdf ? 'pdf' : isDoc ? 'docx' : isText ? 'text' : 'image',
       });
     } catch (uploadErr) {
       res.status(400).json({ error: uploadErr instanceof Error ? uploadErr.message : 'Upload failed' });

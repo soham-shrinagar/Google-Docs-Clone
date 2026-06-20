@@ -4,6 +4,8 @@ import { generateShareToken } from '../utils/helpers.js';
 import { getTemplate } from '../data/templates.js';
 import { getTemplateContent } from '../data/templateContent.js';
 import { notificationService } from './notification.service.js';
+import { emailService } from './email.service.js';
+import { config } from '../config/index.js';
 
 export interface CreateDocumentOptions {
   title?: string;
@@ -105,37 +107,68 @@ export class DocumentService {
 
   async share(documentId: string, userId: string, email: string, role: PermissionRole) {
     const normalizedEmail = email.trim().toLowerCase();
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+      select: { id: true, title: true, ownerId: true },
+    });
+    if (!document) throw new Error('Document not found');
+
+    const sharer = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true },
+    });
+    if (!sharer) throw new Error('User not found');
+
     const targetUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
-    if (!targetUser) {
-      throw new Error(
-        `${normalizedEmail} is not registered yet. Use "Copy share link" instead, or ask them to sign up first.`
-      );
-    }
-    if (targetUser.id === userId) {
+
+    if (targetUser?.id === userId) {
       throw new Error('You cannot share a document with yourself');
     }
     if (role === PermissionRole.OWNER) {
       throw new Error('Cannot assign owner role to collaborators');
     }
 
-    const permission = await prisma.documentPermission.upsert({
-      where: { documentId_userId: { documentId, userId: targetUser.id } },
-      create: { documentId, userId: targetUser.id, role, shareToken: generateShareToken() },
-      update: { role },
+    const { token: shareToken } = await this.createShareLink(documentId, userId);
+
+    let permission = null;
+    if (targetUser) {
+      permission = await prisma.documentPermission.upsert({
+        where: { documentId_userId: { documentId, userId: targetUser.id } },
+        create: { documentId, userId: targetUser.id, role, shareToken: generateShareToken() },
+        update: { role },
+      });
+
+      await notificationService.create(
+        targetUser.id,
+        NotificationType.DOCUMENT_SHARED,
+        'Document shared with you',
+        `${sharer.name} shared "${document.title}" with you`,
+        documentId
+      );
+    }
+
+    const docUrl = targetUser
+      ? `${config.clientUrl}/document/${documentId}`
+      : `${config.clientUrl}/join/${shareToken}`;
+
+    const emailSent = await emailService.sendDocumentShareEmail({
+      to: normalizedEmail,
+      documentTitle: document.title,
+      sharerName: sharer.name,
+      role,
+      docUrl,
+      isRegistered: Boolean(targetUser),
     });
 
-    await notificationService.create(
-      targetUser.id,
-      NotificationType.DOCUMENT_SHARED,
-      'Document shared with you',
-      `You were given ${role} access to a document`,
-      documentId
-    );
+    await this.logActivity(userId, documentId, ActivityType.SHARED, {
+      email: normalizedEmail,
+      role,
+      emailSent,
+    });
 
-    await this.logActivity(userId, documentId, ActivityType.SHARED, { email: normalizedEmail, role });
-    return permission;
+    return { permission, emailSent, docUrl };
   }
 
   async createShareLink(documentId: string, userId: string) {

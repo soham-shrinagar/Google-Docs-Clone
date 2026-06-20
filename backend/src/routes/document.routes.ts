@@ -95,8 +95,8 @@ router.post('/:id/share', requirePermission(PermissionRole.OWNER), async (req: A
       email: z.string().email(),
       role: z.nativeEnum(PermissionRole).default(PermissionRole.EDITOR),
     }).parse(req.body);
-    const permission = await documentService.share(param(req.params.id), req.authUser!.id, email, role);
-    res.json({ permission });
+    const result = await documentService.share(param(req.params.id), req.authUser!.id, email, role);
+    res.json(result);
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : 'Share failed' });
   }

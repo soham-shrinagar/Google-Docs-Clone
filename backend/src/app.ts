@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import session from 'express-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config/index.js';
@@ -14,6 +13,9 @@ import presenceRoutes from './routes/presence.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import templateRoutes from './routes/template.routes.js';
+import commentRoutes from './routes/comment.routes.js';
+import aiRoutes from './routes/ai.routes.js';
+import aiUserRoutes from './routes/ai-user.routes.js';
 
 const backendDir = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(backendDir, '../uploads');
@@ -31,16 +33,6 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
-app.use(session({
-  secret: config.session.secret,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: config.isProduction,
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-  },
-}));
 
 app.use('/api', apiLimiter);
 
@@ -53,6 +45,9 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/documents/:documentId/comments', commentRoutes);
+app.use('/api/documents/:documentId/ai', aiRoutes);
+app.use('/api/ai', aiUserRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/documents/:documentId/versions', versionRoutes);
 app.use('/api/documents/:documentId/presence', presenceRoutes);

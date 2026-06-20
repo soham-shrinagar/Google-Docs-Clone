@@ -6,6 +6,7 @@ import { LandingPage, LoginPage } from './pages/LoginPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EditorPage } from './pages/EditorPage';
+import { AiAnalyticsPage } from './pages/AiAnalyticsPage';
 import { JoinPage } from './pages/JoinPage';
 
 const queryClient = new QueryClient({
@@ -40,6 +41,7 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/dashboard/ai-analytics" element={<ProtectedRoute><AiAnalyticsPage /></ProtectedRoute>} />
       <Route path="/document/:id" element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
       <Route path="/join/:token" element={<ProtectedRoute><JoinPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />

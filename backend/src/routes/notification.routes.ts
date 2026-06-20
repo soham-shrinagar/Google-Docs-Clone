@@ -1,6 +1,5 @@
 import { Router, type Response } from 'express';
 import { notificationService } from '../services/notification.service.js';
-import { analyticsService } from '../services/analytics.service.js';
 import { authenticate, type AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
@@ -26,15 +25,6 @@ router.patch('/:id/read', authenticate, async (req: AuthRequest, res: Response) 
 router.post('/read-all', authenticate, async (req: AuthRequest, res: Response) => {
   await notificationService.markAllRead(req.authUser!.id);
   res.json({ success: true });
-});
-
-router.get('/analytics', authenticate, async (_req: AuthRequest, res: Response) => {
-  try {
-    const metrics = await analyticsService.getMetrics();
-    res.json(metrics);
-  } catch {
-    res.status(500).json({ error: 'Failed to get analytics' });
-  }
 });
 
 export default router;

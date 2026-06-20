@@ -42,18 +42,6 @@ export interface PresenceUser {
   lastActive: string;
 }
 
-export interface DistributedEvent {
-  id: string;
-  type: 'insert' | 'delete' | 'format' | 'sync' | 'merge' | 'conflict_resolved';
-  userId: string;
-  documentId: string;
-  timestamp: number;
-  lamportTimestamp: number;
-  vectorClock: Record<string, number>;
-  payload?: Record<string, unknown>;
-  description: string;
-}
-
 export interface DocumentVersion {
   id: string;
   versionNum: number;
@@ -71,35 +59,14 @@ export interface DocumentOperation {
   user: Pick<User, 'id' | 'name'>;
 }
 
-export interface Notification {
+export interface DocumentComment {
   id: string;
-  type: string;
-  title: string;
-  message: string;
-  isRead: boolean;
+  content: string;
+  quote: string | null;
+  resolved: boolean;
   createdAt: string;
-  documentId?: string;
-}
-
-export interface AnalyticsMetrics {
-  connectedUsers: number;
-  documentsOpen: number;
-  operationsPerSecond: number;
-  crdtMergeCount: number;
-  totalOperations: number;
-  wsLatency: number;
-  syncTime: number;
-  avgMergeTime: number;
-  activeSessions: number;
-  memoryUsage: { heapUsed: number; heapTotal: number; rss: number };
-  serverUptime: number;
+  user: Pick<User, 'id' | 'name' | 'email' | 'avatar' | 'color'>;
+  replies?: DocumentComment[];
 }
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'syncing';
-
-export interface NetworkSimSettings {
-  latency: number;
-  packetLoss: number;
-  bandwidth: number;
-  disconnected: boolean;
-}

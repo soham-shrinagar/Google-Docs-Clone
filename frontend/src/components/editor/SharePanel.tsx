@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Copy, Check, Link2, X, Users } from 'lucide-react';
+import { Copy, Check, Link2, X, Users, Mail } from 'lucide-react';
 import { api } from '../../lib/api';
 
 interface SharePanelProps {
@@ -59,8 +59,14 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
     setError('');
     setSuccess('');
     try {
-      await api.shareDocument(documentId, email.trim(), role);
-      setSuccess(`Shared with ${email}`);
+      const result = await api.shareDocument(documentId, email.trim(), role);
+      if (result.emailSent) {
+        setSuccess(`Invite email sent to ${email.trim()} with a link to open the document.`);
+      } else {
+        setSuccess(
+          `Shared with ${email.trim()}. Email not sent — add SMTP settings in .env to enable email invites.`
+        );
+      }
       setEmail('');
       const { collaborators: list } = await api.getCollaborators(documentId);
       setCollaborators(list);
@@ -115,8 +121,12 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
       </div>
 
       <div className="border-t border-line pt-4 mb-4">
-        <label className="text-xs font-medium text-muted uppercase tracking-wide">Invite by email</label>
-        <p className="text-xs text-muted mb-2 mt-1">Recipient must already have a CollabDocs account.</p>
+        <label className="text-xs font-medium text-muted uppercase tracking-wide flex items-center gap-1.5">
+          <Mail size={12} /> Invite by email
+        </label>
+        <p className="text-xs text-muted mb-2 mt-1">
+          We&apos;ll email them a direct link to open this document. New users can sign up via the link.
+        </p>
         <div className="flex flex-col sm:flex-row gap-2 mt-1">
           <input
             type="email"
@@ -141,7 +151,7 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
           disabled={loading || !email.trim()}
           className="btn-primary w-full mt-3 !py-2"
         >
-          Send invite
+          Send email invite
         </button>
       </div>
 

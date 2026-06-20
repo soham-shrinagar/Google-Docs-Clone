@@ -3,6 +3,7 @@
  * 1. Tries Prisma db push (direct non-pooler hostname)
  * 2. Falls back to Neon serverless HTTP (works when TCP/5432 is blocked on WSL/VPN)
  */
+import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import dns from 'node:dns';
 import { Resolver } from 'node:dns/promises';
@@ -137,25 +138,63 @@ async function tableExists(pool: pg.Pool, table: string): Promise<boolean> {
   return rows[0]?.reg != null;
 }
 
-async function applySqlViaPg(pool: pg.Pool, sql: string) {
-  const statements = sql
-    .split(/;\s*\n/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith('--'));
+function splitSqlStatements(sql: string): string[] {
+  const statements: string[] = [];
+  let current = '';
+  let inDoBlock = false;
 
-  for (const statement of statements) {
+  for (const line of sql.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('--')) continue;
+
+    current += `${line}\n`;
+
+    if (/^DO \$\$/.test(trimmed)) inDoBlock = true;
+    if (inDoBlock && /END \$\$;/.test(trimmed)) {
+      inDoBlock = false;
+      statements.push(current.trim());
+      current = '';
+    } else if (!inDoBlock && trimmed.endsWith(';')) {
+      statements.push(current.trim());
+      current = '';
+    }
+  }
+
+  if (current.trim()) statements.push(current.trim());
+  return statements.filter(Boolean);
+}
+
+async function applySqlViaPg(pool: pg.Pool, sql: string) {
+  for (const statement of splitSqlStatements(sql)) {
     await pool.query(statement);
+  }
+}
+
+async function ensureAiTables(pool: pg.Pool) {
+  if (await tableExists(pool, 'ai_usage_stats')) {
+    console.log('✓ AI tables already present');
+    return;
+  }
+  console.log('→ Applying AI tables patch…');
+  const patchPath = path.join(backendRoot, 'prisma/patches/ai-tables.sql');
+  const sql = readFileSync(patchPath, 'utf-8');
+  await applySqlViaPg(pool, sql);
+  console.log('✓ AI tables patch applied');
+}
+
+async function verifyAndPatchAiTables(rawUrl: string) {
+  try {
+    const pool = await buildPgPool(rawUrl);
+    await ensureAiTables(pool);
+    await pool.end();
+  } catch (err) {
+    console.warn('Could not verify AI tables:', err instanceof Error ? err.message : err);
   }
 }
 
 async function applySqlViaNeon(rawUrl: string, sql: string) {
   const pool = new NeonPool({ connectionString: sanitizeDatabaseUrl(rawUrl) });
-  const statements = sql
-    .split(/;\s*\n/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith('--'));
-
-  for (const statement of statements) {
+  for (const statement of splitSqlStatements(sql)) {
     await pool.query(statement);
   }
   await pool.end();
@@ -183,25 +222,16 @@ async function main() {
       const pool = await buildPgPool(rawUrl);
       console.log('✓ Connected via pg pool');
 
-      const hasAiTables = await tableExists(pool, 'ai_requests');
-      let diffSql = hasAiTables
-        ? generateDiffSql('datasource', prismaPushUrl(rawUrl))
-        : null;
-
-      if (!diffSql && !hasAiTables) {
-        console.log('→ Generating full schema SQL…');
-        diffSql = generateDiffSql('empty');
+      const hasCore = await tableExists(pool, 'documents');
+      if (!hasCore) {
+        console.log('→ Empty database — applying full schema…');
+        const diffSql = generateDiffSql('empty');
+        if (diffSql) await applySqlViaPg(pool, diffSql);
       }
 
-      if (diffSql) {
-        console.log('Applying schema changes…');
-        await applySqlViaPg(pool, diffSql);
-        applied = true;
-        console.log('✓ Schema applied via pg pool');
-      } else if (hasAiTables) {
-        console.log('✓ AI tables present — schema appears up to date');
-        applied = true;
-      }
+      await ensureAiTables(pool);
+      applied = true;
+      console.log('✓ Schema verified via pg pool');
       await pool.end();
     } catch (pgErr) {
       console.warn('pg pool failed:', pgErr instanceof Error ? pgErr.message : pgErr);
@@ -232,6 +262,9 @@ Could not sync schema. Try:
       process.exit(1);
     }
   }
+
+  console.log('\n→ Verifying AI tables…');
+  await verifyAndPatchAiTables(rawUrl);
 
   const gen = spawnSync('npx', ['prisma', 'generate'], {
     cwd: backendRoot,

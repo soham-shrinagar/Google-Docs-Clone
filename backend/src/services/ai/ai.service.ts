@@ -380,40 +380,50 @@ class AiService {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    const stats = await prisma.aiUsageStat.findMany({
-      where: { userId, date: { gte: since } },
-      orderBy: { date: 'asc' },
-    });
+    const emptyTotals = {
+      rewriteCount: 0,
+      grammarFixCount: 0,
+      dictationCount: 0,
+      summarizeCount: 0,
+      chatCount: 0,
+      acceptedSuggestions: 0,
+      rejectedSuggestions: 0,
+    };
 
-    const totals = stats.reduce(
-      (acc, s) => ({
-        rewriteCount: acc.rewriteCount + s.rewriteCount,
-        grammarFixCount: acc.grammarFixCount + s.grammarFixCount,
-        dictationCount: acc.dictationCount + s.dictationCount,
-        summarizeCount: acc.summarizeCount + s.summarizeCount,
-        chatCount: acc.chatCount + s.chatCount,
-        acceptedSuggestions: acc.acceptedSuggestions + s.acceptedSuggestions,
-        rejectedSuggestions: acc.rejectedSuggestions + s.rejectedSuggestions,
-      }),
-      {
-        rewriteCount: 0,
-        grammarFixCount: 0,
-        dictationCount: 0,
-        summarizeCount: 0,
-        chatCount: 0,
-        acceptedSuggestions: 0,
-        rejectedSuggestions: 0,
+    try {
+      const stats = await prisma.aiUsageStat.findMany({
+        where: { userId, date: { gte: since } },
+        orderBy: { date: 'asc' },
+      });
+
+      const totals = stats.reduce(
+        (acc, s) => ({
+          rewriteCount: acc.rewriteCount + s.rewriteCount,
+          grammarFixCount: acc.grammarFixCount + s.grammarFixCount,
+          dictationCount: acc.dictationCount + s.dictationCount,
+          summarizeCount: acc.summarizeCount + s.summarizeCount,
+          chatCount: acc.chatCount + s.chatCount,
+          acceptedSuggestions: acc.acceptedSuggestions + s.acceptedSuggestions,
+          rejectedSuggestions: acc.rejectedSuggestions + s.rejectedSuggestions,
+        }),
+        { ...emptyTotals }
+      );
+
+      const recentRequests = await prisma.aiRequest.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: { id: true, type: true, action: true, status: true, createdAt: true, documentId: true },
+      });
+
+      return { totals, daily: stats, recentRequests };
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code === 'P2021') {
+        return { totals: emptyTotals, daily: [], recentRequests: [] };
       }
-    );
-
-    const recentRequests = await prisma.aiRequest.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-      select: { id: true, type: true, action: true, status: true, createdAt: true, documentId: true },
-    });
-
-    return { totals, daily: stats, recentRequests };
+      throw err;
+    }
   }
 
   async parseVoiceCommand(transcript: string) {

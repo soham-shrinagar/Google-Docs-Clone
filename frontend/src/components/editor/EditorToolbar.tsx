@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import {
-  Bold, Italic, Underline as UnderlineIcon, Strikethrough, List, ListOrdered, Quote, Code,
-  Minus, Link as LinkIcon, Table as TableIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Undo, Redo, Highlighter, Subscript, Superscript, ChevronDown, Minus as MinusIcon, Plus,
-  IndentIncrease, IndentDecrease, RemoveFormatting, ListChecks,
+  Bold, Italic, Underline as UnderlineIcon, Strikethrough, List, ListOrdered, Code,
+  Link as LinkIcon, Table as TableIcon, AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  Undo, Redo, Highlighter, ChevronDown, Minus as MinusIcon, Plus, ListChecks, MoreHorizontal,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { FileUploadButton } from './FileUploadButton';
@@ -26,8 +25,12 @@ interface EditorToolbarProps {
   canRedo?: boolean;
 }
 
-function ToolbarDivider() {
-  return <div className="w-px h-6 bg-line mx-1 shrink-0" />;
+function ToolbarGroup({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-0.5 px-1 py-0.5 rounded-lg bg-paper/80 border border-line/40 shrink-0">
+      {children}
+    </div>
+  );
 }
 
 export function EditorToolbar({
@@ -128,261 +131,163 @@ export function EditorToolbar({
   const closeMenu = () => setOpenMenu(null);
 
   return (
-    <div ref={toolbarRef} className="border-b border-line/60 bg-surface/50 sticky top-[3.75rem] z-10 backdrop-blur-sm">
-      <div className="flex items-center gap-0.5 px-3 py-1.5 flex-wrap">
-        <button type="button" onClick={onUndo} disabled={!canUndo} className={btn(false, !canUndo)} title="Undo">
-          <Undo size={17} />
-        </button>
-        <button type="button" onClick={onRedo} disabled={!canRedo} className={btn(false, !canRedo)} title="Redo">
-          <Redo size={17} />
-        </button>
-
-        <ToolbarDivider />
-
-        <div className="relative">
-          <button type="button" className={selectBtn(openMenu === 'style')} onClick={() => toggleMenu('style')}>
-            <span className="max-w-[7rem] truncate">
-              {PARAGRAPH_STYLES.find((s) => s.value === currentStyle)?.label ?? 'Normal text'}
-            </span>
-            <ChevronDown size={14} className="text-muted shrink-0" />
+    <div ref={toolbarRef} className="border-b border-line/60 bg-surface/60 backdrop-blur-sm sticky top-[52px] z-10">
+      <div className="flex items-center gap-2 px-3 py-1.5 overflow-x-auto scroll-panel">
+        <ToolbarGroup>
+          <button type="button" onClick={onUndo} disabled={!canUndo} className={btn(false, !canUndo)} title="Undo">
+            <Undo size={16} />
           </button>
-          <ToolbarDropdown open={openMenu === 'style'} width="w-48" header="Paragraph style">
-            {PARAGRAPH_STYLES.map((style) => (
-              <ToolbarMenuItem
-                key={style.value}
-                active={currentStyle === style.value}
-                onClick={() => applyStyle(style.value)}
-              >
-                {style.label}
-              </ToolbarMenuItem>
-            ))}
-          </ToolbarDropdown>
-        </div>
-
-        <div className="relative">
-          <button type="button" className={clsx(selectBtn(openMenu === 'font'), 'min-w-[110px] max-w-[140px]')} onClick={() => toggleMenu('font')}>
-            <span className="truncate">{currentFontLabel}</span>
-            <ChevronDown size={14} className="text-muted shrink-0" />
+          <button type="button" onClick={onRedo} disabled={!canRedo} className={btn(false, !canRedo)} title="Redo">
+            <Redo size={16} />
           </button>
-          <ToolbarDropdown open={openMenu === 'font'} width="w-56" header="Font">
-            {FONT_FAMILIES.map((font) => (
-              <ToolbarMenuItem
-                key={font.value}
-                active={currentFont === font.value}
-                onClick={() => {
-                  editor.chain().focus().setFontFamily(font.value).run();
-                  closeMenu();
-                }}
-                style={{ fontFamily: font.value }}
-              >
-                {font.label}
-              </ToolbarMenuItem>
-            ))}
-          </ToolbarDropdown>
-        </div>
+        </ToolbarGroup>
 
-        <div className="inline-flex items-center border border-line rounded-lg overflow-hidden shrink-0 bg-paper">
-          <button type="button" onClick={() => adjustSize(-1)} className="p-1.5 hover:bg-surface text-muted" title="Decrease font size">
-            <MinusIcon size={14} />
-          </button>
+        <ToolbarGroup>
           <div className="relative">
-            <button type="button" className="px-2.5 h-8 text-sm min-w-[2.5rem] hover:bg-surface font-medium" onClick={() => toggleMenu('size')}>
-              {currentSize}
+            <button type="button" className={selectBtn(openMenu === 'style')} onClick={() => toggleMenu('style')}>
+              <span className="max-w-[6rem] truncate text-xs">
+                {PARAGRAPH_STYLES.find((s) => s.value === currentStyle)?.label ?? 'Normal'}
+              </span>
+              <ChevronDown size={14} className="text-muted shrink-0" />
             </button>
-            <ToolbarDropdown open={openMenu === 'size'} width="w-24" header="Font size">
-              {FONT_SIZES.map((size) => (
-                <ToolbarMenuItem
-                  key={size}
-                  active={currentSize === size}
-                  onClick={() => {
-                    editor.chain().focus().setFontSize(`${size}px`).run();
-                    closeMenu();
-                  }}
-                >
-                  {size}
+            <ToolbarDropdown open={openMenu === 'style'} width="w-48" header="Paragraph style">
+              {PARAGRAPH_STYLES.map((style) => (
+                <ToolbarMenuItem key={style.value} active={currentStyle === style.value} onClick={() => applyStyle(style.value)}>
+                  {style.label}
                 </ToolbarMenuItem>
               ))}
             </ToolbarDropdown>
           </div>
-          <button type="button" onClick={() => adjustSize(1)} className="p-1.5 hover:bg-surface text-muted" title="Increase font size">
-            <Plus size={14} />
+          <div className="relative">
+            <button type="button" className={clsx(selectBtn(openMenu === 'font'), 'min-w-[90px] max-w-[120px]')} onClick={() => toggleMenu('font')}>
+              <span className="truncate text-xs">{currentFontLabel}</span>
+              <ChevronDown size={14} className="text-muted shrink-0" />
+            </button>
+            <ToolbarDropdown open={openMenu === 'font'} width="w-56" header="Font">
+              {FONT_FAMILIES.map((font) => (
+                <ToolbarMenuItem key={font.value} active={currentFont === font.value} onClick={() => { editor.chain().focus().setFontFamily(font.value).run(); closeMenu(); }} style={{ fontFamily: font.value }}>
+                  {font.label}
+                </ToolbarMenuItem>
+              ))}
+            </ToolbarDropdown>
+          </div>
+          <div className="inline-flex items-center border border-line rounded-lg overflow-hidden shrink-0 bg-paper">
+            <button type="button" onClick={() => adjustSize(-1)} className="p-1.5 hover:bg-surface text-muted" title="Decrease font size">
+              <MinusIcon size={14} />
+            </button>
+            <div className="relative">
+              <button type="button" className="px-2 h-8 text-xs min-w-[2rem] hover:bg-surface font-medium" onClick={() => toggleMenu('size')}>
+                {currentSize}
+              </button>
+              <ToolbarDropdown open={openMenu === 'size'} width="w-24" header="Font size">
+                {FONT_SIZES.map((size) => (
+                  <ToolbarMenuItem key={size} active={currentSize === size} onClick={() => { editor.chain().focus().setFontSize(`${size}px`).run(); closeMenu(); }}>
+                    {size}
+                  </ToolbarMenuItem>
+                ))}
+              </ToolbarDropdown>
+            </div>
+            <button type="button" onClick={() => adjustSize(1)} className="p-1.5 hover:bg-surface text-muted" title="Increase font size">
+              <Plus size={14} />
+            </button>
+          </div>
+        </ToolbarGroup>
+
+        <ToolbarGroup>
+          <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={btn(editor.isActive('bold'))} title="Bold">
+            <Bold size={16} />
           </button>
-        </div>
-
-        <ToolbarDivider />
-
-        <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={btn(editor.isActive('bold'))} title="Bold">
-          <Bold size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={btn(editor.isActive('italic'))} title="Italic">
-          <Italic size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={btn(editor.isActive('underline'))} title="Underline">
-          <UnderlineIcon size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={btn(editor.isActive('strike'))} title="Strikethrough">
-          <Strikethrough size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleCode().run()} className={btn(editor.isActive('code'))} title="Inline code">
-          <Code size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleSubscript().run()} className={btn(editor.isActive('subscript'))} title="Subscript">
-          <Subscript size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleSuperscript().run()} className={btn(editor.isActive('superscript'))} title="Superscript">
-          <Superscript size={17} />
-        </button>
-
-        <ToolbarDivider />
-
-        <div className="relative">
-          <button type="button" className={btn(openMenu === 'textColor')} onClick={() => toggleMenu('textColor')} title="Text color">
-            <span className="flex flex-col items-center leading-none gap-0.5">
-              <span className="text-sm font-bold">A</span>
-              <span className="w-5 h-1 rounded-full" style={{ backgroundColor: currentTextColor }} />
-            </span>
+          <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={btn(editor.isActive('italic'))} title="Italic">
+            <Italic size={16} />
           </button>
-          <ToolbarDropdown
-            open={openMenu === 'textColor'}
-            width="w-[15.5rem]"
-            footer={
-              <ToolbarDropdownFooter
-                label="Reset color"
-                onClick={() => {
-                  editor.chain().focus().unsetColor().run();
-                  closeMenu();
-                }}
-              />
-            }
-          >
-            <ToolbarColorGrid
-              label="Text color"
-              colors={TEXT_COLORS}
-              selected={currentTextColor}
-              onPick={(color) => {
-                editor.chain().focus().setColor(color).run();
-                closeMenu();
-              }}
-            />
-          </ToolbarDropdown>
-        </div>
-
-        <div className="relative">
-          <button type="button" className={btn(editor.isActive('highlight') || openMenu === 'highlight')} onClick={() => toggleMenu('highlight')} title="Highlight">
-            <Highlighter size={17} />
+          <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={btn(editor.isActive('underline'))} title="Underline">
+            <UnderlineIcon size={16} />
           </button>
-          <ToolbarDropdown
-            open={openMenu === 'highlight'}
-            width="w-[15.5rem]"
-            footer={
-              <ToolbarDropdownFooter
-                label="Remove highlight"
-                onClick={() => {
-                  editor.chain().focus().unsetHighlight().run();
-                  closeMenu();
-                }}
-              />
-            }
-          >
-            <ToolbarColorGrid
-              label="Highlight color"
-              colors={HIGHLIGHT_COLORS}
-              selected={currentHighlight}
-              onPick={(color) => {
-                editor.chain().focus().toggleHighlight({ color }).run();
-                closeMenu();
-              }}
-            />
-          </ToolbarDropdown>
-        </div>
+          <button type="button" onClick={() => editor.chain().focus().toggleStrike().run()} className={btn(editor.isActive('strike'))} title="Strikethrough">
+            <Strikethrough size={16} />
+          </button>
+          <button type="button" onClick={() => editor.chain().focus().toggleCode().run()} className={btn(editor.isActive('code'))} title="Inline code">
+            <Code size={16} />
+          </button>
+          <div className="relative">
+            <button type="button" className={btn(openMenu === 'textColor')} onClick={() => toggleMenu('textColor')} title="Text color">
+              <span className="flex flex-col items-center leading-none gap-0.5">
+                <span className="text-xs font-bold">A</span>
+                <span className="w-4 h-0.5 rounded-full" style={{ backgroundColor: currentTextColor }} />
+              </span>
+            </button>
+            <ToolbarDropdown open={openMenu === 'textColor'} width="w-[15.5rem]" footer={<ToolbarDropdownFooter label="Reset color" onClick={() => { editor.chain().focus().unsetColor().run(); closeMenu(); }} />}>
+              <ToolbarColorGrid label="Text color" colors={TEXT_COLORS} selected={currentTextColor} onPick={(color) => { editor.chain().focus().setColor(color).run(); closeMenu(); }} />
+            </ToolbarDropdown>
+          </div>
+          <div className="relative">
+            <button type="button" className={btn(editor.isActive('highlight') || openMenu === 'highlight')} onClick={() => toggleMenu('highlight')} title="Highlight">
+              <Highlighter size={16} />
+            </button>
+            <ToolbarDropdown open={openMenu === 'highlight'} width="w-[15.5rem]" footer={<ToolbarDropdownFooter label="Remove highlight" onClick={() => { editor.chain().focus().unsetHighlight().run(); closeMenu(); }} />}>
+              <ToolbarColorGrid label="Highlight color" colors={HIGHLIGHT_COLORS} selected={currentHighlight} onPick={(color) => { editor.chain().focus().toggleHighlight({ color }).run(); closeMenu(); }} />
+            </ToolbarDropdown>
+          </div>
+        </ToolbarGroup>
 
-        <ToolbarDivider />
+        <ToolbarGroup>
+          <button type="button" onClick={addLink} className={btn(editor.isActive('link'))} title="Insert link">
+            <LinkIcon size={16} />
+          </button>
+          <FileUploadButton editor={editor} className="!p-1.5" />
+          <button type="button" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} className={btn(false)} title="Insert table">
+            <TableIcon size={16} />
+          </button>
+        </ToolbarGroup>
 
-        <button type="button" onClick={addLink} className={btn(editor.isActive('link'))} title="Insert link">
-          <LinkIcon size={17} />
-        </button>
-        <FileUploadButton editor={editor} className="!p-1.5" />
+        <ToolbarGroup>
+          <button type="button" onClick={() => editor.chain().focus().setTextAlign('left').run()} className={btn(editor.isActive({ textAlign: 'left' }))} title="Align left">
+            <AlignLeft size={16} />
+          </button>
+          <button type="button" onClick={() => editor.chain().focus().setTextAlign('center').run()} className={btn(editor.isActive({ textAlign: 'center' }))} title="Align center">
+            <AlignCenter size={16} />
+          </button>
+          <button type="button" onClick={() => editor.chain().focus().setTextAlign('right').run()} className={btn(editor.isActive({ textAlign: 'right' }))} title="Align right">
+            <AlignRight size={16} />
+          </button>
+          <button type="button" onClick={() => editor.chain().focus().setTextAlign('justify').run()} className={btn(editor.isActive({ textAlign: 'justify' }))} title="Justify">
+            <AlignJustify size={16} />
+          </button>
+        </ToolbarGroup>
 
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-          className={btn(false)}
-          title="Insert table"
-        >
-          <TableIcon size={17} />
-        </button>
+        <ToolbarGroup>
+          <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={btn(editor.isActive('bulletList'))} title="Bullet list">
+            <List size={16} />
+          </button>
+          <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btn(editor.isActive('orderedList'))} title="Numbered list">
+            <ListOrdered size={16} />
+          </button>
+          <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={btn(editor.isActive('taskList'))} title="Checklist">
+            <ListChecks size={16} />
+          </button>
+        </ToolbarGroup>
 
-        <ToolbarDivider />
-
-        <button type="button" onClick={() => editor.chain().focus().setTextAlign('left').run()} className={btn(editor.isActive({ textAlign: 'left' }))} title="Align left">
-          <AlignLeft size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().setTextAlign('center').run()} className={btn(editor.isActive({ textAlign: 'center' }))} title="Align center">
-          <AlignCenter size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().setTextAlign('right').run()} className={btn(editor.isActive({ textAlign: 'right' }))} title="Align right">
-          <AlignRight size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().setTextAlign('justify').run()} className={btn(editor.isActive({ textAlign: 'justify' }))} title="Justify">
-          <AlignJustify size={17} />
-        </button>
-
-        <ToolbarDivider />
-
-        <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={btn(editor.isActive('bulletList'))} title="Bullet list">
-          <List size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btn(editor.isActive('orderedList'))} title="Numbered list">
-          <ListOrdered size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={btn(editor.isActive('taskList'))} title="Checklist">
-          <ListChecks size={17} />
-        </button>
-
-        <div className="relative">
-          <button type="button" className={selectBtn(openMenu === 'lineHeight')} onClick={() => toggleMenu('lineHeight')} title="Line height">
-            LH
+        <div className="relative shrink-0">
+          <button type="button" className={selectBtn(openMenu === 'more')} onClick={() => toggleMenu('more')} title="More formatting">
+            <MoreHorizontal size={16} />
             <ChevronDown size={12} className="text-muted" />
           </button>
-          <ToolbarDropdown open={openMenu === 'lineHeight'} width="w-28" header="Line height">
+          <ToolbarDropdown open={openMenu === 'more'} align="right" width="w-44" header="More">
+            <ToolbarMenuItem onClick={() => { editor.chain().focus().toggleSubscript().run(); closeMenu(); }} active={editor.isActive('subscript')}>Subscript</ToolbarMenuItem>
+            <ToolbarMenuItem onClick={() => { editor.chain().focus().toggleSuperscript().run(); closeMenu(); }} active={editor.isActive('superscript')}>Superscript</ToolbarMenuItem>
+            <ToolbarMenuItem onClick={() => { editor.chain().focus().toggleBlockquote().run(); closeMenu(); }} active={editor.isActive('blockquote')}>Quote</ToolbarMenuItem>
+            <ToolbarMenuItem onClick={() => { editor.chain().focus().toggleCodeBlock().run(); closeMenu(); }} active={editor.isActive('codeBlock')}>Code block</ToolbarMenuItem>
+            <ToolbarMenuItem onClick={() => { editor.chain().focus().setHorizontalRule().run(); closeMenu(); }}>Divider</ToolbarMenuItem>
+            <ToolbarMenuItem onClick={() => { editor.chain().focus().sinkListItem('listItem').run(); closeMenu(); }}>Increase indent</ToolbarMenuItem>
+            <ToolbarMenuItem onClick={() => { editor.chain().focus().liftListItem('listItem').run(); closeMenu(); }}>Decrease indent</ToolbarMenuItem>
             {LINE_HEIGHTS.map((lh) => (
-              <ToolbarMenuItem
-                key={lh}
-                active={currentLineHeight === lh}
-                onClick={() => {
-                  editor.chain().focus().setLineHeight(lh).run();
-                  closeMenu();
-                }}
-              >
-                {lh}
+              <ToolbarMenuItem key={lh} active={currentLineHeight === lh} onClick={() => { editor.chain().focus().setLineHeight(lh).run(); closeMenu(); }}>
+                Line height {lh}
               </ToolbarMenuItem>
             ))}
+            <ToolbarMenuItem onClick={() => { editor.chain().focus().clearNodes().unsetAllMarks().run(); closeMenu(); }}>Clear formatting</ToolbarMenuItem>
           </ToolbarDropdown>
         </div>
-
-        <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={btn(editor.isActive('blockquote'))} title="Quote">
-          <Quote size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={btn(editor.isActive('codeBlock'))} title="Code block">
-          <Code size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className={btn(false)} title="Divider">
-          <Minus size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().sinkListItem('listItem').run()} className={btn(false)} title="Increase indent">
-          <IndentIncrease size={17} />
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().liftListItem('listItem').run()} className={btn(false)} title="Decrease indent">
-          <IndentDecrease size={17} />
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
-          className={btn(false)}
-          title="Clear formatting"
-        >
-          <RemoveFormatting size={17} />
-        </button>
       </div>
     </div>
   );

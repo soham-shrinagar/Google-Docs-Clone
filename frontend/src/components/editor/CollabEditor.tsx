@@ -197,19 +197,22 @@ export function CollabEditor({
           <GrammarHoverPopover editor={editor} />
         </>
       )}
-      <div
-        className="editor-zoom-stage"
-        style={{ width: stageWidth, minHeight: stageHeight }}
-      >
+      <div className="editor-zoom-viewport">
         <div
-          ref={paperRef}
-          className="editor-paper editor-paper-zoomed"
-          style={{
-            transform: `scale(${scale})`,
-            width: PAGE_WIDTH_PX,
-          }}
+          className="editor-zoom-stage"
+          style={{ width: stageWidth, height: stageHeight }}
         >
-          <EditorContent editor={editor} />
+          <div
+            ref={paperRef}
+            className="editor-paper editor-paper-zoomed"
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              width: PAGE_WIDTH_PX,
+            }}
+          >
+            <EditorContent editor={editor} />
+          </div>
         </div>
       </div>
     </div>

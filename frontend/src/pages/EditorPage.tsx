@@ -1,23 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, Share2, History, ListTree, MessageSquare, BarChart3, Keyboard } from 'lucide-react';
-import { ThemeToggle } from '../components/layout/ThemeToggle';
+import { ArrowLeft } from 'lucide-react';
 import { CollabEditor } from '../components/editor/CollabEditor';
 import { EditorToolbar } from '../components/editor/EditorToolbar';
+import { EditorHeaderActions } from '../components/editor/EditorHeaderActions';
 import { useYjsUndo } from '../hooks/useYjsUndo';
 import { useEditorKeyboardShortcuts } from '../hooks/useEditorKeyboardShortcuts';
 import { SyncStatus } from '../components/editor/SyncStatus';
-import { PresenceBar } from '../components/editor/PresenceBar';
 import { VersionHistoryPanel } from '../components/editor/VersionHistoryPanel';
 import { SharePanel } from '../components/editor/SharePanel';
-import { DocumentOutline } from '../components/editor/DocumentOutline';
 import { CommentsPanel } from '../components/editor/CommentsPanel';
 import { FindReplacePanel } from '../components/editor/FindReplacePanel';
 import { DocumentStatsModal } from '../components/editor/DocumentStatsModal';
 import { KeyboardShortcutsModal } from '../components/editor/KeyboardShortcutsModal';
-import { ExportMenu } from '../components/editor/ExportMenu';
-import { PageZoomControl } from '../components/editor/PageZoomControl';
+import { DocumentOutline } from '../components/editor/DocumentOutline';
 import { VoiceDictationPanel } from '../components/editor/VoiceDictationPanel';
 import { AiAssistPanel } from '../components/editor/AiAssistPanel';
 import { useVoiceDictation } from '../hooks/useVoiceDictation';
@@ -61,7 +58,6 @@ export function EditorPage() {
   const [showStats, setShowStats] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [pageZoom, setPageZoom] = useState<PageZoomMode>(loadPageZoom);
-  const [zoomMenuOpen, setZoomMenuOpen] = useState(false);
   const [showVoice, setShowVoice] = useState(false);
   const [showAi, setShowAi] = useState(false);
   const [aiPanelKey, setAiPanelKey] = useState(0);
@@ -275,21 +271,21 @@ export function EditorPage() {
     );
   }
 
-  const toolBtn = (active: boolean) =>
-    `p-2 rounded-xl transition-all duration-200 ${
-      active
-        ? 'bg-accent-soft text-accent shadow-sm ring-1 ring-accent/20'
-        : 'text-muted hover:text-ink hover:bg-surface'
-    }`;
-
   const canEdit = document.permission === 'OWNER' || document.permission === 'EDITOR';
   const canComment = canEdit || document.permission === 'COMMENTER';
+
+  const handlePageZoomChange = (mode: PageZoomMode) => {
+    setPageZoom(mode);
+    try {
+      localStorage.setItem(ZOOM_STORAGE_KEY, mode);
+    } catch { /* ignore */ }
+  };
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col">
       <header className="glass-panel border-b border-line/60 sticky top-0 z-20 shadow-sm">
-        <div className="flex items-center justify-between px-4 py-2.5 gap-4">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center justify-between px-4 py-2 gap-3">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <button type="button" onClick={() => navigate('/dashboard')} className="btn-ghost !p-2 shrink-0">
               <ArrowLeft size={18} />
             </button>
@@ -298,65 +294,39 @@ export function EditorPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={handleTitleBlur}
-              className="text-base font-semibold bg-transparent border-none outline-none min-w-0 flex-1 text-ink truncate focus:ring-0"
+              className="text-base font-semibold bg-transparent border-none outline-none min-w-0 flex-1 text-ink truncate focus:ring-0 max-w-md"
             />
+            <div className="md:hidden flex items-center gap-1.5 shrink-0">
+              <SyncStatus lastSaved={lastSaved} localReady={localReady} />
+            </div>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
-            <SyncStatus lastSaved={lastSaved} localReady={localReady} />
-            <PresenceBar users={presenceUsers} />
-
-            <div className="w-px h-5 bg-line mx-1.5 hidden sm:block" />
-
-            <ThemeToggle />
-            <PageZoomControl
-              value={pageZoom}
-              onChange={(mode) => {
-                setPageZoom(mode);
-                try {
-                  localStorage.setItem(ZOOM_STORAGE_KEY, mode);
-                } catch { /* ignore */ }
-              }}
-              open={zoomMenuOpen}
-              onToggle={() => setZoomMenuOpen((v) => !v)}
-              onClose={() => setZoomMenuOpen(false)}
-            />
-            <ExportMenu editor={editor} title={title} />
-
-            <button type="button" onClick={() => setShowOutline((v) => !v)} className={toolBtn(showOutline)} title="Outline">
-              <ListTree size={17} />
-            </button>
-            <button type="button" onClick={() => setShowComments((v) => !v)} className={toolBtn(showComments)} title="Comments">
-              <MessageSquare size={17} />
-            </button>
-            <button type="button" onClick={() => setShowStats(true)} className={toolBtn(false)} title="Statistics">
-              <BarChart3 size={17} />
-            </button>
-            {canEdit && (
-              <>
-                <button type="button" onClick={() => { setShowVoice((v) => !v); setShowAi(false); }} className={toolBtn(showVoice)} title="Voice dictation">
-                  🎤
-                </button>
-                <button type="button" onClick={() => { setShowAi((v) => !v); setShowVoice(false); }} className={toolBtn(showAi)} title="AI Assistant">
-                  ✨
-                </button>
-              </>
-            )}
-            <button type="button" onClick={() => setShowShortcuts(true)} className={toolBtn(false)} title="Shortcuts (Ctrl+/)">
-              <Keyboard size={17} />
-            </button>
-            <button type="button" onClick={toggleVersionHistory} className={toolBtn(showVersionHistory)} title="Version History">
-              <History size={17} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowShare(!showShare)}
-              className={toolBtn(showShare)}
-              title="Share"
-            >
-              <Share2 size={17} />
-            </button>
-          </div>
+          <EditorHeaderActions
+            editor={editor}
+            title={title}
+            lastSaved={lastSaved}
+            localReady={localReady}
+            presenceUsers={presenceUsers}
+            pageZoom={pageZoom}
+            onPageZoomChange={handlePageZoomChange}
+            canEdit={canEdit}
+            showOutline={showOutline}
+            showComments={showComments}
+            showVoice={showVoice}
+            showAi={showAi}
+            showShare={showShare}
+            showVersionHistory={showVersionHistory}
+            onToggleOutline={() => setShowOutline((v) => !v)}
+            onToggleComments={() => setShowComments((v) => !v)}
+            onToggleVoice={() => { setShowVoice((v) => !v); setShowAi(false); }}
+            onToggleAi={() => { setShowAi((v) => !v); setShowVoice(false); }}
+            onToggleShare={() => setShowShare((v) => !v)}
+            onToggleVersionHistory={toggleVersionHistory}
+            onShowStats={() => setShowStats(true)}
+            onShowShortcuts={() => setShowShortcuts(true)}
+            onFind={() => setFindMode('find')}
+            onReplace={() => setFindMode('replace')}
+          />
         </div>
 
         {showShare && id && (

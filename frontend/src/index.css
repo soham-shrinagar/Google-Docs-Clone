@@ -338,7 +338,7 @@ body {
 .editor-canvas {
   background: var(--theme-surface);
   flex: 1;
-  padding: 2.5rem 1.5rem 5rem;
+  padding: 2rem 1rem 4rem;
   background-image: radial-gradient(circle, var(--theme-dot) 1px, transparent 1px);
   background-size: 20px 20px;
 }
@@ -422,14 +422,26 @@ body {
   min-height: 480px;
 }
 
+.editor-zoom-viewport {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+}
+
 .editor-zoom-stage {
-  margin-left: auto;
-  margin-right: auto;
+  position: relative;
+  flex-shrink: 0;
+  margin: 0 auto;
+  overflow: visible;
   transition: width 0.2s ease, height 0.2s ease;
 }
 
 .editor-paper-zoomed {
   transform-origin: top left;
+  position: absolute;
+  top: 0;
+  left: 0;
   transition: transform 0.2s ease;
 }
 

@@ -1,7 +1,9 @@
 /**
  * Schema push with Neon-friendly connectivity.
  * 1. Tries Prisma db push (direct non-pooler hostname)
- * 2. Falls back to Neon serverless HTTP (works when TCP/5432 is blocked on WSL/VPN)
+ * 2. Falls back to pg pool with IPv4 + SSL SNI
+ * 3. Applies idempotent SQL patches for AI + workspace when Prisma CLI cannot connect
+ * 4. Applies prisma migrate diff when core tables exist but schema drift remains
  */
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -131,11 +133,18 @@ function generateDiffSql(mode: 'empty' | 'datasource', databaseUrl?: string): st
 }
 
 async function tableExists(pool: pg.Pool, table: string): Promise<boolean> {
-  const { rows } = await pool.query(
-    `SELECT to_regclass($1) AS reg`,
-    [`public.${table}`]
-  );
+  const { rows } = await pool.query(`SELECT to_regclass($1) AS reg`, [`public.${table}`]);
   return rows[0]?.reg != null;
+}
+
+async function columnExists(pool: pg.Pool, table: string, column: string): Promise<boolean> {
+  const { rows } = await pool.query(
+    `SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2
+     LIMIT 1`,
+    [table, column]
+  );
+  return rows.length > 0;
 }
 
 function splitSqlStatements(sql: string): string[] {
@@ -170,26 +179,12 @@ async function applySqlViaPg(pool: pg.Pool, sql: string) {
   }
 }
 
-async function ensureWorkspaceTables(pool: pg.Pool) {
-  if (await tableExists(pool, 'workspace_pages')) {
-    console.log('✓ Workspace tables already present');
-    return;
-  }
-  console.log('→ Applying workspace tables patch…');
-  const patchPath = path.join(backendRoot, 'prisma/patches/workspace-tables.sql');
+async function applyPatchFile(pool: pg.Pool, relativePath: string, label: string) {
+  console.log(`→ Applying ${label}…`);
+  const patchPath = path.join(backendRoot, relativePath);
   const sql = readFileSync(patchPath, 'utf-8');
   await applySqlViaPg(pool, sql);
-  console.log('✓ Workspace tables patch applied');
-}
-
-async function verifyAndPatchWorkspaceTables(rawUrl: string) {
-  try {
-    const pool = await buildPgPool(rawUrl);
-    await ensureWorkspaceTables(pool);
-    await pool.end();
-  } catch (err) {
-    console.warn('Could not verify workspace tables:', err instanceof Error ? err.message : err);
-  }
+  console.log(`✓ ${label} applied`);
 }
 
 async function ensureAiTables(pool: pg.Pool) {
@@ -197,20 +192,69 @@ async function ensureAiTables(pool: pg.Pool) {
     console.log('✓ AI tables already present');
     return;
   }
-  console.log('→ Applying AI tables patch…');
-  const patchPath = path.join(backendRoot, 'prisma/patches/ai-tables.sql');
-  const sql = readFileSync(patchPath, 'utf-8');
-  await applySqlViaPg(pool, sql);
-  console.log('✓ AI tables patch applied');
+  await applyPatchFile(pool, 'prisma/patches/ai-tables.sql', 'AI tables patch');
 }
 
-async function verifyAndPatchAiTables(rawUrl: string) {
+async function workspaceSchemaReady(pool: pg.Pool): Promise<boolean> {
+  const hasDocumentType = await columnExists(pool, 'documents', 'documentType');
+  const hasWorkspaceMeta = await columnExists(pool, 'documents', 'workspaceMeta');
+  const hasWorkspacePages = await tableExists(pool, 'workspace_pages');
+  return hasDocumentType && hasWorkspaceMeta && hasWorkspacePages;
+}
+
+async function ensureWorkspaceSchema(pool: pg.Pool) {
+  if (await workspaceSchemaReady(pool)) {
+    console.log('✓ Workspace schema already present');
+    return;
+  }
+  await applyPatchFile(pool, 'prisma/patches/workspace-tables.sql', 'workspace schema patch');
+}
+
+async function applySchemaDriftDiff(pool: pg.Pool, rawUrl: string) {
+  const diffSql = generateDiffSql('datasource', prismaPushUrl(rawUrl));
+  if (!diffSql) return;
+  console.log('→ Applying Prisma schema drift diff…');
+  await applySqlViaPg(pool, diffSql);
+  console.log('✓ Schema drift diff applied');
+}
+
+async function verifyRequiredColumns(pool: pg.Pool) {
+  const required: Array<[string, string]> = [
+    ['documents', 'documentType'],
+    ['documents', 'workspaceMeta'],
+  ];
+
+  for (const [table, column] of required) {
+    if (!(await columnExists(pool, table, column))) {
+      throw new Error(`Schema verification failed: missing ${table}.${column}`);
+    }
+  }
+}
+
+async function syncViaPgPool(rawUrl: string): Promise<boolean> {
   try {
     const pool = await buildPgPool(rawUrl);
+    console.log('✓ Connected via pg pool');
+
+    const hasCore = await tableExists(pool, 'documents');
+    if (!hasCore) {
+      console.log('→ Empty database — applying full schema…');
+      const diffSql = generateDiffSql('empty');
+      if (diffSql) await applySqlViaPg(pool, diffSql);
+    } else {
+      await applySchemaDriftDiff(pool, rawUrl);
+    }
+
     await ensureAiTables(pool);
+    await ensureWorkspaceSchema(pool);
+    await verifyRequiredColumns(pool);
+
+    console.log('✓ Schema verified via pg pool');
     await pool.end();
-  } catch (err) {
-    console.warn('Could not verify AI tables:', err instanceof Error ? err.message : err);
+    return true;
+  } catch (pgErr) {
+    console.warn('pg pool failed:', pgErr instanceof Error ? pgErr.message : pgErr);
+    return false;
   }
 }
 
@@ -231,35 +275,17 @@ async function main() {
 
   console.log(`Target: ${directHost(rawUrl)}`);
 
-  // Attempt 1: standard Prisma db push (direct hostname)
+  let synced = false;
+
   console.log('\n→ Trying Prisma db push…');
   if (runPrismaDbPush(prismaPushUrl(rawUrl))) {
     console.log('✓ Schema synced via Prisma db push');
+    synced = true;
   } else {
-    console.log('\n→ Prisma db push failed — trying pg pool with resolved IPv4 + SSL SNI…');
+    console.log('\n→ Prisma db push failed — trying pg pool fallback…');
+    synced = await syncViaPgPool(rawUrl);
 
-    let applied = false;
-
-    try {
-      const pool = await buildPgPool(rawUrl);
-      console.log('✓ Connected via pg pool');
-
-      const hasCore = await tableExists(pool, 'documents');
-      if (!hasCore) {
-        console.log('→ Empty database — applying full schema…');
-        const diffSql = generateDiffSql('empty');
-        if (diffSql) await applySqlViaPg(pool, diffSql);
-      }
-
-      await ensureAiTables(pool);
-      applied = true;
-      console.log('✓ Schema verified via pg pool');
-      await pool.end();
-    } catch (pgErr) {
-      console.warn('pg pool failed:', pgErr instanceof Error ? pgErr.message : pgErr);
-    }
-
-    if (!applied) {
+    if (!synced) {
       console.log('\n→ Trying Neon serverless HTTP…');
       const httpOk = await tryNeonHttp(rawUrl);
       if (httpOk) {
@@ -267,27 +293,36 @@ async function main() {
         const diffSql = generateDiffSql('empty');
         if (diffSql) {
           await applySqlViaNeon(rawUrl, diffSql);
-          applied = true;
+          synced = true;
           console.log('✓ Schema applied via Neon HTTP');
         }
       }
     }
+  }
 
-    if (!applied) {
-      console.error(`
+  if (!synced) {
+    console.error(`
 Could not sync schema. Try:
   1. Wake your Neon project in the Neon console
   2. Run from Windows PowerShell: npm run db:push
   3. Fix WSL DNS: echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
   4. Set DATABASE_HOST=<ipv4> in .env (from: nslookup your-host.neon.tech 8.8.8.8)
 `);
-      process.exit(1);
-    }
+    process.exit(1);
   }
 
-  console.log('\n→ Verifying AI tables…');
-  await verifyAndPatchAiTables(rawUrl);
-  await verifyAndPatchWorkspaceTables(rawUrl);
+  // Always verify patches even when Prisma db push succeeded (handles partial applies)
+  console.log('\n→ Verifying AI + workspace schema…');
+  try {
+    const pool = await buildPgPool(rawUrl);
+    await ensureAiTables(pool);
+    await ensureWorkspaceSchema(pool);
+    await verifyRequiredColumns(pool);
+    await pool.end();
+  } catch (err) {
+    console.warn('Post-sync verification failed:', err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
 
   const gen = spawnSync('npx', ['prisma', 'generate'], {
     cwd: backendRoot,

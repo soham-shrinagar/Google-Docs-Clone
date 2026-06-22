@@ -198,6 +198,7 @@ export type { User } from '../generated/prisma/client.js';
 export {
   PermissionRole,
   ActivityType,
+  DocumentType,
   NotificationType,
   AiRequestType,
   AiRequestStatus,

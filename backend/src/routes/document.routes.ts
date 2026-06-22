@@ -43,6 +43,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       title: z.string().optional(),
       templateId: z.string().optional(),
       seedContent: z.record(z.unknown()).nullable().optional(),
+      documentType: z.enum(['RICH_TEXT', 'WORKSPACE']).optional(),
+      workspaceMeta: z.record(z.unknown()).nullable().optional(),
     }).parse(req.body);
     const result = await documentService.create(req.authUser!.id, body);
     res.status(201).json(result);

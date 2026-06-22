@@ -24,6 +24,13 @@ enum ActivityType {
   JOINED
   LEFT
   COMMENTED
+  UPLOADED
+  EXPORTED
+}
+
+enum DocumentType {
+  RICH_TEXT
+  WORKSPACE
 }
 
 enum NotificationType {
@@ -115,15 +122,17 @@ model User {
 }
 
 model Document {
-  id          String   @id @default(uuid())
-  title       String   @default("Untitled Document")
-  content     Bytes?
-  seedContent Json?
-  thumbnail   String?
-  ownerId     String
-  isPinned    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String       @id @default(uuid())
+  title        String       @default("Untitled Document")
+  documentType DocumentType @default(RICH_TEXT)
+  content      Bytes?
+  seedContent  Json?
+  workspaceMeta Json?
+  thumbnail    String?
+  ownerId      String
+  isPinned     Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   owner           User                 @relation("DocumentOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   permissions     DocumentPermission[]
@@ -142,9 +151,14 @@ model Document {
   speechTranscripts SpeechTranscript[]
   grammarSuggestions GrammarSuggestion[]
   documentSummaries DocumentSummary[]
+  assets          WorkspaceAsset[]
+  workspacePages  WorkspacePage[]
+  workspaceElements WorkspaceElement[]
+  exports         DocumentExport[]
 
   @@index([ownerId])
   @@index([updatedAt])
+  @@index([documentType])
   @@map("documents")
 }
 
@@ -477,4 +491,79 @@ model DocumentSummary {
 
   @@index([documentId, createdAt])
   @@map("document_summaries")
+}
+
+model WorkspaceAsset {
+  id           String   @id @default(uuid())
+  documentId   String
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  scanStatus   String   @default("pending")
+  createdAt    DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("workspace_assets")
+}
+
+model WorkspacePage {
+  id             String   @id @default(uuid())
+  documentId     String
+  pageIndex      Int
+  width          Float    @default(816)
+  height         Float    @default(1056)
+  backgroundType String   @default("blank")
+  backgroundUrl  String?
+  backgroundMeta Json?
+  label          String?
+  createdAt      DateTime @default(now())
+
+  document Document            @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  elements WorkspaceElement[]
+
+  @@index([documentId, pageIndex])
+  @@map("workspace_pages")
+}
+
+model WorkspaceElement {
+  id         String   @id @default(uuid())
+  documentId String
+  pageId     String
+  type       String
+  layer      String   @default("drawing")
+  zIndex     Int      @default(0)
+  transform  Json
+  style      Json?
+  data       Json     @default("{}")
+  locked     Boolean  @default(false)
+  visible    Boolean  @default(true)
+  name       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  document Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  page     WorkspacePage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, pageId])
+  @@map("workspace_elements")
+}
+
+model DocumentExport {
+  id         String   @id @default(uuid())
+  documentId String
+  userId     String
+  format     String
+  status     String   @default("completed")
+  url        String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, createdAt])
+  @@map("document_exports")
 }

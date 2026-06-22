@@ -170,18 +170,17 @@ export function AiAssistPanel({
   ];
 
   return (
-    <aside className="w-80 border-l border-line bg-paper flex flex-col shrink-0 animate-fade-up">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-line">
-        <div className="flex items-center gap-2">
-          <Sparkles size={18} className="text-accent" />
-          <h2 className="font-semibold text-ink">AI Assistant</h2>
-        </div>
-        <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface text-muted">
-          <X size={18} />
+    <aside className="side-panel animate-fade-up">
+      <div className="side-panel-header">
+        <h3 className="side-panel-title">
+          <Sparkles size={15} className="text-muted" /> Assistant
+        </h3>
+        <button type="button" onClick={onClose} className="btn-ghost p-1!" aria-label="Close assistant">
+          <X size={15} />
         </button>
       </div>
 
-      <div className="flex border-b border-line overflow-x-auto">
+      <div className="flex border-b border-line overflow-x-auto shrink-0">
         {tabs.map((t) => (
           <button
             key={t.id}

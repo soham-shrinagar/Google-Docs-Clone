@@ -1,4 +1,4 @@
-import { PermissionRole, ActivityType, Prisma, NotificationType } from '../lib/prisma.js';
+import { PermissionRole, ActivityType, Prisma, NotificationType, DocumentType } from '../lib/prisma.js';
 import { prisma } from '../lib/prisma.js';
 import { generateShareToken } from '../utils/helpers.js';
 import { getTemplate } from '../data/templates.js';
@@ -11,6 +11,8 @@ export interface CreateDocumentOptions {
   title?: string;
   templateId?: string;
   seedContent?: Record<string, unknown> | null;
+  documentType?: DocumentType;
+  workspaceMeta?: Record<string, unknown> | null;
 }
 
 export interface DocumentFilters {
@@ -33,6 +35,10 @@ export class DocumentService {
         title,
         ownerId: userId,
         thumbnail: template?.thumbnail ?? null,
+        documentType: options.documentType ?? DocumentType.RICH_TEXT,
+        workspaceMeta: options.workspaceMeta
+          ? (options.workspaceMeta as Prisma.InputJsonValue)
+          : undefined,
         seedContent: seedContent ? (seedContent as Prisma.InputJsonValue) : undefined,
         permissions: {
           create: { userId, role: PermissionRole.OWNER },
@@ -289,8 +295,10 @@ export class DocumentService {
     doc: {
       id: string;
       title: string;
+      documentType?: DocumentType;
       thumbnail: string | null;
       ownerId: string;
+      workspaceMeta?: Prisma.JsonValue | null;
       seedContent?: Prisma.JsonValue | null;
       createdAt: Date;
       updatedAt: Date;
@@ -312,7 +320,9 @@ export class DocumentService {
     return {
       id: doc.id,
       title: doc.title,
+      documentType: doc.documentType ?? DocumentType.RICH_TEXT,
       thumbnail: doc.thumbnail,
+      workspaceMeta: doc.workspaceMeta ?? null,
       owner: doc.owner,
       collaboratorCount: doc._count.permissions,
       operationCount: doc._count.operations,

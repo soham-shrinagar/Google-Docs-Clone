@@ -78,7 +78,7 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
   };
 
   return (
-    <div className="fixed right-4 top-16 w-[min(calc(100vw-2rem),24rem)] bg-paper border border-line rounded-2xl shadow-xl z-50 p-5 animate-fade-up">
+    <div className="fixed right-4 top-14 w-[min(calc(100vw-2rem),24rem)] surface-card z-50 p-5 animate-fade-up">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-ink flex items-center gap-2">
           <Users size={18} className="text-accent" /> Share document

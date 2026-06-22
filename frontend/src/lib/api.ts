@@ -78,11 +78,37 @@ export const api = {
     title?: string;
     templateId?: string;
     seedContent?: import('../components/editor/PdfEmbed').TipTapContent | null;
+    documentType?: import('../types').DocumentType;
+    workspaceMeta?: Record<string, unknown> | null;
   }) {
     return request<{ document: import('../types').Document }>(API_URL, '/api/documents', {
       method: 'POST',
       body: JSON.stringify(options ?? {}),
     });
+  },
+
+  createWorkspace(options: {
+    title: string;
+    seed: {
+      pages: import('../lib/workspace/types').WorkspacePageData[];
+      elements?: import('../lib/workspace/types').WorkspaceElementData[];
+      sourceAsset?: {
+        filename: string;
+        originalName: string;
+        mimeType: string;
+        size: number;
+        url: string;
+      };
+    };
+  }) {
+    return request<{ document: import('../types').Document }>(API_URL, '/api/workspace', {
+      method: 'POST',
+      body: JSON.stringify(options),
+    });
+  },
+
+  getWorkspaceMeta(documentId: string) {
+    return request<{ pages: unknown[]; assets: unknown[] }>(API_URL, `/api/workspace/${documentId}/meta`);
   },
 
   getTemplates() {

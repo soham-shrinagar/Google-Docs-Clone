@@ -47,8 +47,8 @@ interface EditorHeaderActionsProps {
 
 function ToolGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-0.5 px-1.5 py-1 rounded-xl bg-surface/80 border border-line/50">
-      <span className="hidden xl:inline text-[10px] font-semibold uppercase tracking-wider text-muted px-1.5">{label}</span>
+    <div className="flex items-center gap-0.5 px-1 py-0.5 rounded-md border border-line bg-surface/50">
+      <span className="hidden xl:inline text-[10px] font-medium uppercase tracking-wider text-muted px-1">{label}</span>
       {children}
     </div>
   );
@@ -69,12 +69,12 @@ function IconBtn({
       onClick={onClick}
       title={title}
       className={clsx(
-        'p-2 rounded-lg transition-all duration-200',
+        'p-1.5 rounded-md transition-colors duration-150',
         active
-          ? 'bg-accent-soft text-accent ring-1 ring-accent/20'
+          ? 'bg-accent-soft text-accent'
           : accent
-          ? 'text-accent hover:bg-accent-soft'
-          : 'text-muted hover:text-ink hover:bg-paper'
+          ? 'text-muted hover:text-accent hover:bg-accent-soft'
+          : 'text-muted hover:text-ink hover:bg-surface'
       )}
     >
       {children}
@@ -143,11 +143,11 @@ export function EditorHeaderActions({
       </ToolGroup>
 
       {canEdit && (
-        <ToolGroup label="AI">
-          <IconBtn active={showVoice} onClick={onToggleVoice} title="Voice dictation" accent>
+        <ToolGroup label="Tools">
+          <IconBtn active={showVoice} onClick={onToggleVoice} title="Voice dictation">
             <Mic size={16} />
           </IconBtn>
-          <IconBtn active={showAi} onClick={onToggleAi} title="AI Assistant" accent>
+          <IconBtn active={showAi} onClick={onToggleAi} title="AI Assistant">
             <Sparkles size={16} />
           </IconBtn>
         </ToolGroup>
@@ -158,8 +158,8 @@ export function EditorHeaderActions({
           type="button"
           onClick={() => setMoreOpen((v) => !v)}
           className={clsx(
-            'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border text-sm font-medium transition-colors',
-            moreOpen ? 'border-accent/40 bg-accent-soft text-accent' : 'border-line bg-paper text-muted hover:text-ink hover:bg-surface'
+            'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-sm font-medium transition-colors',
+            moreOpen ? 'border-accent/30 bg-accent-soft text-accent' : 'border-line bg-paper text-muted hover:text-ink hover:bg-surface'
           )}
         >
           <MoreHorizontal size={16} />
@@ -205,12 +205,7 @@ export function EditorHeaderActions({
       <button
         type="button"
         onClick={onToggleShare}
-        className={clsx(
-          'inline-flex items-center gap-1.5 h-8 px-3.5 rounded-xl text-sm font-semibold transition-all',
-          showShare
-            ? 'bg-accent text-white shadow-md'
-            : 'bg-accent text-white hover:brightness-105 shadow-sm'
-        )}
+        className={clsx('btn-primary h-8!', showShare && 'brightness-95')}
       >
         <Share2 size={15} />
         Share

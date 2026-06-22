@@ -52,15 +52,15 @@ export function DocumentOutline({ editor, onClose }: DocumentOutlineProps) {
 
   return (
     <aside className="w-64 shrink-0 border-r border-line bg-paper flex flex-col h-full" aria-label="Document outline">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-line">
-        <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-          <ListTree size={16} className="text-accent" /> Outline
+      <div className="side-panel-header">
+        <h3 className="side-panel-title">
+          <ListTree size={15} className="text-muted" /> Outline
         </h3>
-        <button type="button" onClick={onClose} className="p-1 rounded hover:bg-canvas text-muted" aria-label="Close outline">
-          <X size={16} />
+        <button type="button" onClick={onClose} className="btn-ghost p-1!" aria-label="Close outline">
+          <X size={15} />
         </button>
       </div>
-      <nav className="flex-1 overflow-y-auto scroll-panel p-3">
+      <nav className="side-panel-body">
         {items.length === 0 ? (
           <p className="text-xs text-muted px-2">Add headings to build your document outline.</p>
         ) : (
@@ -70,7 +70,7 @@ export function DocumentOutline({ editor, onClose }: DocumentOutlineProps) {
                 <button
                   type="button"
                   onClick={() => scrollTo(item.pos)}
-                  className="w-full text-left text-sm py-1.5 px-2 rounded-lg hover:bg-canvas hover:text-accent truncate transition-colors"
+                  className="w-full text-left text-sm py-1.5 px-2 rounded-md hover:bg-surface truncate transition-colors"
                   style={{ paddingLeft: `${(item.level - 1) * 12 + 8}px` }}
                 >
                   {item.text}

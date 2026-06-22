@@ -51,13 +51,13 @@ export function CommentsPanel({ documentId, editor, canComment, onClose }: Comme
   const comments = data?.comments ?? [];
 
   return (
-    <aside className="w-80 shrink-0 border-l border-line bg-paper flex flex-col h-full" aria-label="Comments">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-line">
-        <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-          <MessageSquare size={16} className="text-accent" /> Comments
+    <aside className="side-panel" aria-label="Comments">
+      <div className="side-panel-header">
+        <h3 className="side-panel-title">
+          <MessageSquare size={15} className="text-muted" /> Comments
         </h3>
-        <button type="button" onClick={onClose} className="p-1 rounded hover:bg-canvas text-muted" aria-label="Close comments">
-          <X size={16} />
+        <button type="button" onClick={onClose} className="btn-ghost p-1!" aria-label="Close comments">
+          <X size={15} />
         </button>
       </div>
 

@@ -16,6 +16,7 @@ import templateRoutes from './routes/template.routes.js';
 import commentRoutes from './routes/comment.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import aiUserRoutes from './routes/ai-user.routes.js';
+import workspaceRoutes from './routes/workspace.routes.js';
 
 const backendDir = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(backendDir, '../uploads');
@@ -48,6 +49,7 @@ app.use('/api/uploads', uploadRoutes);
 app.use('/api/documents/:documentId/comments', commentRoutes);
 app.use('/api/documents/:documentId/ai', aiRoutes);
 app.use('/api/ai', aiUserRoutes);
+app.use('/api/workspace', workspaceRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/documents/:documentId/versions', versionRoutes);
 app.use('/api/documents/:documentId/presence', presenceRoutes);

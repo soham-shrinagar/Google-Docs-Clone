@@ -170,6 +170,28 @@ async function applySqlViaPg(pool: pg.Pool, sql: string) {
   }
 }
 
+async function ensureWorkspaceTables(pool: pg.Pool) {
+  if (await tableExists(pool, 'workspace_pages')) {
+    console.log('✓ Workspace tables already present');
+    return;
+  }
+  console.log('→ Applying workspace tables patch…');
+  const patchPath = path.join(backendRoot, 'prisma/patches/workspace-tables.sql');
+  const sql = readFileSync(patchPath, 'utf-8');
+  await applySqlViaPg(pool, sql);
+  console.log('✓ Workspace tables patch applied');
+}
+
+async function verifyAndPatchWorkspaceTables(rawUrl: string) {
+  try {
+    const pool = await buildPgPool(rawUrl);
+    await ensureWorkspaceTables(pool);
+    await pool.end();
+  } catch (err) {
+    console.warn('Could not verify workspace tables:', err instanceof Error ? err.message : err);
+  }
+}
+
 async function ensureAiTables(pool: pg.Pool) {
   if (await tableExists(pool, 'ai_usage_stats')) {
     console.log('✓ AI tables already present');
@@ -265,6 +287,7 @@ Could not sync schema. Try:
 
   console.log('\n→ Verifying AI tables…');
   await verifyAndPatchAiTables(rawUrl);
+  await verifyAndPatchWorkspaceTables(rawUrl);
 
   const gen = spawnSync('npx', ['prisma', 'generate'], {
     cwd: backendRoot,

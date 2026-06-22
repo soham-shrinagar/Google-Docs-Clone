@@ -40,14 +40,14 @@ export function TemplatePicker({ open, onClose, onSelect, onUpload, loading }: T
         style={{ background: 'var(--theme-overlay)' }}
         onClick={onClose}
       />
-      <div className="relative bg-paper rounded-2xl border border-line shadow-2xl w-full max-w-3xl modal-shell animate-fade-up overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-line shrink-0">
+      <div className="relative surface-card w-full max-w-3xl modal-shell animate-fade-up overflow-hidden">
+        <div className="side-panel-header shrink-0">
           <div>
-            <h2 className="text-lg font-semibold text-ink">Create a document</h2>
-            <p className="text-sm text-muted mt-0.5">Upload a file or pick a template</p>
+            <h2 className="text-sm font-medium text-ink">Create a document</h2>
+            <p className="text-xs text-muted mt-0.5">Upload a file or pick a template</p>
           </div>
-          <button type="button" onClick={onClose} className="p-2 rounded-lg text-muted hover:text-ink hover:bg-canvas">
-            <X size={20} />
+          <button type="button" onClick={onClose} className="btn-ghost p-1!">
+            <X size={18} />
           </button>
         </div>
 

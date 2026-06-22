@@ -5,7 +5,7 @@ import { useAuth } from './hooks/useApi';
 import { LandingPage, LoginPage } from './pages/LoginPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { EditorPage } from './pages/EditorPage';
+import { DocumentPage } from './pages/DocumentPage';
 import { AiAnalyticsPage } from './pages/AiAnalyticsPage';
 import { JoinPage } from './pages/JoinPage';
 
@@ -42,7 +42,7 @@ function AppRoutes() {
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/dashboard/ai-analytics" element={<ProtectedRoute><AiAnalyticsPage /></ProtectedRoute>} />
-      <Route path="/document/:id" element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
+      <Route path="/document/:id" element={<ProtectedRoute><DocumentPage /></ProtectedRoute>} />
       <Route path="/join/:token" element={<ProtectedRoute><JoinPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

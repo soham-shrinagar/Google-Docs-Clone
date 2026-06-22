@@ -27,7 +27,7 @@ interface EditorToolbarProps {
 
 function ToolbarGroup({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-0.5 px-1 py-0.5 rounded-lg bg-paper/80 border border-line/40 shrink-0">
+    <div className="flex items-center gap-0.5 shrink-0">
       {children}
     </div>
   );
@@ -69,17 +69,17 @@ export function EditorToolbar({
 
   const btn = (active: boolean, disabled = false) =>
     clsx(
-      'p-1.5 rounded-lg transition-colors shrink-0',
+      'p-1.5 rounded-md transition-colors shrink-0',
       disabled && 'opacity-40 pointer-events-none',
       active ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink hover:bg-surface'
     );
 
   const selectBtn = (open = false) =>
     clsx(
-      'inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border text-sm transition-colors shrink-0',
+      'inline-flex items-center gap-1 h-7 px-2 rounded-md border text-xs transition-colors shrink-0',
       open
-        ? 'border-accent/40 bg-accent-soft text-accent'
-        : 'border-line bg-paper text-ink hover:border-accent/30 hover:bg-surface'
+        ? 'border-accent/30 bg-accent-soft text-accent'
+        : 'border-line bg-paper text-ink hover:bg-surface'
     );
 
   const currentStyle = [1, 2, 3, 4, 5, 6].find((l) => editor.isActive('heading', { level: l }))
@@ -131,8 +131,8 @@ export function EditorToolbar({
   const closeMenu = () => setOpenMenu(null);
 
   return (
-    <div ref={toolbarRef} className="border-b border-line/60 bg-surface/60 backdrop-blur-sm sticky top-[52px] z-10">
-      <div className="flex items-center gap-2 px-3 py-1.5 overflow-x-auto scroll-panel">
+    <div ref={toolbarRef} className="border-b border-line bg-paper sticky top-12 z-10">
+      <div className="flex items-center gap-1 px-3 py-1 overflow-x-auto scroll-panel">
         <ToolbarGroup>
           <button type="button" onClick={onUndo} disabled={!canUndo} className={btn(false, !canUndo)} title="Undo">
             <Undo size={16} />

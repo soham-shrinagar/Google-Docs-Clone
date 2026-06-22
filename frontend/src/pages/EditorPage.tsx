@@ -293,18 +293,18 @@ export function EditorPage() {
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col">
-      <header className="glass-panel border-b border-line/60 sticky top-0 z-20 shadow-sm">
-        <div className="flex items-center justify-between px-4 py-2 gap-3">
+      <header className="glass-panel sticky top-0 z-20">
+        <div className="flex items-center justify-between px-4 py-1.5 gap-3 h-12">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <button type="button" onClick={() => navigate('/dashboard')} className="btn-ghost !p-2 shrink-0">
-              <ArrowLeft size={18} />
+            <button type="button" onClick={() => navigate('/dashboard')} className="btn-ghost shrink-0" aria-label="Back to dashboard">
+              <ArrowLeft size={16} />
             </button>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={handleTitleBlur}
-              className="text-base font-semibold bg-transparent border-none outline-none min-w-0 flex-1 text-ink truncate focus:ring-0 max-w-md"
+              className="text-sm font-medium bg-transparent border-none outline-none min-w-0 flex-1 text-ink truncate max-w-md"
             />
             <div className="md:hidden shrink-0">
               <SyncStatus compact />

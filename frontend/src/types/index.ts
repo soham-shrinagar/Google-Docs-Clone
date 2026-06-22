@@ -9,10 +9,14 @@ export interface User {
 
 export type PermissionRole = 'OWNER' | 'EDITOR' | 'COMMENTER' | 'VIEWER';
 
+export type DocumentType = 'RICH_TEXT' | 'WORKSPACE';
+
 export interface Document {
   id: string;
   title: string;
+  documentType?: DocumentType;
   thumbnail: string | null;
+  workspaceMeta?: Record<string, unknown> | null;
   owner: Pick<User, 'id' | 'name' | 'email' | 'avatar'>;
   collaboratorCount: number;
   operationCount: number;

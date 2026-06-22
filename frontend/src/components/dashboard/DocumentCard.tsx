@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Pin, MoreVertical, Users, Clock } from 'lucide-react';
+import { Pin, MoreVertical, Users, Clock, FileText, Layout } from 'lucide-react';
 import type { Document } from '../../types';
 
 interface DocumentCardProps {
@@ -10,21 +10,22 @@ interface DocumentCardProps {
   onPin: (id: string) => void;
 }
 
-function DocPreview({ title }: { title: string }) {
-  const seed = title.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const accentBar = seed % 3 === 0 ? 'bg-accent' : seed % 3 === 1 ? 'bg-ink/80' : 'bg-accent/60';
-
+function DocPreview({ isWorkspace }: { isWorkspace?: boolean }) {
   return (
-    <div className="h-36 bg-surface p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-dot-grid opacity-30 pointer-events-none" />
-      <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-accent/10 blur-2xl pointer-events-none" />
-      <div className="relative h-full bg-paper rounded-lg border border-line/80 shadow-sm p-3 flex flex-col gap-2 mx-1 group-hover:shadow-md transition-shadow">
-        <div className={`h-1 w-8 rounded-full ${accentBar} shrink-0`} />
-        <div className="h-2 w-3/4 preview-line rounded-full mt-1" />
-        <div className="h-1.5 w-full preview-line rounded-full" />
-        <div className="h-1.5 w-[90%] preview-line rounded-full" />
-        <div className="h-1.5 w-4/5 preview-line rounded-full" />
-        <div className="h-1.5 w-2/3 preview-line rounded-full mt-auto" />
+    <div className="h-32 bg-surface border-b border-line p-3 flex items-center justify-center">
+      <div className="w-full h-full bg-paper border border-line rounded-md p-3 flex flex-col gap-1.5">
+        <div className="flex items-center gap-1.5 mb-1">
+          {isWorkspace ? (
+            <Layout size={12} className="text-muted shrink-0" />
+          ) : (
+            <FileText size={12} className="text-muted shrink-0" />
+          )}
+          <div className="h-1.5 flex-1 preview-line rounded-sm" />
+        </div>
+        <div className="h-1 w-full preview-line rounded-sm" />
+        <div className="h-1 w-[85%] preview-line rounded-sm" />
+        <div className="h-1 w-[70%] preview-line rounded-sm" />
+        <div className="h-1 w-[90%] preview-line rounded-sm mt-auto" />
       </div>
     </div>
   );
@@ -45,25 +46,27 @@ export function DocumentCard({ document: doc, onDelete, onPin }: DocumentCardPro
     return () => window.document.removeEventListener('mousedown', close);
   }, [menuOpen]);
 
+  const isWorkspace = doc.documentType === 'WORKSPACE';
+
   return (
     <Link
       to={`/document/${doc.id}`}
-      className="group block bg-paper rounded-2xl overflow-hidden card-interactive"
+      className="group block card-interactive overflow-hidden"
     >
-      <DocPreview title={doc.title} />
+      <DocPreview isWorkspace={isWorkspace} />
 
-      <div className="p-4">
+      <div className="p-3.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h3 className="font-semibold text-ink truncate group-hover:text-accent transition-colors">
+              <h3 className="text-sm font-medium text-ink truncate">
                 {doc.title}
               </h3>
               {doc.isPinned && (
-                <Pin size={13} className="text-accent shrink-0 fill-accent/20" />
+                <Pin size={12} className="text-accent shrink-0" />
               )}
             </div>
-            <p className="text-xs text-muted mt-1 truncate">{doc.owner.name}</p>
+            <p className="text-xs text-muted mt-0.5 truncate">{doc.owner.name}</p>
           </div>
 
           <div className="relative shrink-0" ref={menuRef}>
@@ -74,16 +77,17 @@ export function DocumentCard({ document: doc, onDelete, onPin }: DocumentCardPro
                 e.stopPropagation();
                 setMenuOpen((v) => !v);
               }}
-              className="p-1.5 rounded-lg text-muted hover:text-ink hover:bg-canvas opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
+              className="p-1 rounded-md text-muted hover:text-ink hover:bg-surface opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+              aria-label="Document options"
             >
-              <MoreVertical size={16} />
+              <MoreVertical size={15} />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-paper border border-line rounded-xl py-1.5 z-30 w-36 shadow-xl">
+              <div className="dropdown-menu absolute right-0 top-full mt-1 py-1 z-30 w-32">
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPin(doc.id); setMenuOpen(false); }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-canvas"
+                  className="w-full px-3 py-1.5 text-left text-sm hover:bg-surface"
                 >
                   {doc.isPinned ? 'Unpin' : 'Pin'}
                 </button>
@@ -91,7 +95,7 @@ export function DocumentCard({ document: doc, onDelete, onPin }: DocumentCardPro
                   <button
                     type="button"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(doc.id); setMenuOpen(false); }}
-                    className="w-full px-3 py-2 text-left text-sm text-muted hover:bg-canvas"
+                    className="w-full px-3 py-1.5 text-left text-sm text-muted hover:bg-surface"
                   >
                     Delete
                   </button>
@@ -101,17 +105,17 @@ export function DocumentCard({ document: doc, onDelete, onPin }: DocumentCardPro
           </div>
         </div>
 
-        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-line/60 text-xs text-muted">
+        <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-line text-xs text-muted">
           <span className="flex items-center gap-1">
-            <Users size={12} />
+            <Users size={11} />
             {doc.collaboratorCount}
           </span>
           <span className="flex items-center gap-1">
-            <Clock size={12} />
+            <Clock size={11} />
             {formatDistanceToNow(new Date(doc.updatedAt), { addSuffix: true })}
           </span>
-          <span className="ml-auto text-[10px] font-medium uppercase tracking-wide text-muted/80">
-            {doc.permission.toLowerCase()}
+          <span className="ml-auto text-[10px] font-medium uppercase tracking-wide opacity-70">
+            {isWorkspace ? 'Canvas' : 'Doc'}
           </span>
         </div>
       </div>

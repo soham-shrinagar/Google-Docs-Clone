@@ -1,7 +1,7 @@
-import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { api } from '../api';
 import { resolveUploadUrl } from '../uploads';
+import { buildPdfPagesFromUpload } from './pdfPageRender';
 import {
   createBlankPage,
   createElement,
@@ -12,17 +12,18 @@ import {
   type WorkspaceSeed,
 } from './types';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString();
-
 export const WORKSPACE_ACCEPT =
   'image/jpeg,image/png,image/webp,application/pdf,.pdf,' +
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,' +
   'text/plain,.txt,text/markdown,.md';
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
+
+export type UploadProgressCallback = (info: {
+  phase: 'uploading' | 'processing' | 'creating';
+  progress: number;
+  message: string;
+}) => void;
 
 export function validateWorkspaceFile(file: File): string | null {
   if (file.size > MAX_FILE_SIZE) return 'File must be under 15 MB';
@@ -34,64 +35,15 @@ export function validateWorkspaceFile(file: File): string | null {
   return null;
 }
 
-async function canvasToUpload(canvas: HTMLCanvasElement, name: string): Promise<string> {
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, 'image/jpeg', 0.92)
-  );
-  if (!blob) throw new Error('Failed to render page');
-  const file = new File([blob], name, { type: 'image/jpeg' });
-  const result = await api.uploadFile(file);
-  return resolveUploadUrl(result.url);
-}
-
-async function renderPdfPages(file: File): Promise<{
-  pages: WorkspacePageData[];
-  sourceAsset: WorkspaceSeed['sourceAsset'];
-}> {
-  const upload = await api.uploadFile(file);
-  const sourceUrl = resolveUploadUrl(upload.url);
-  const sourceAsset = {
-    filename: upload.filename,
-    originalName: upload.originalName,
-    mimeType: upload.mimeType,
-    size: upload.size,
-    url: sourceUrl,
-  };
-
-  const data = new Uint8Array(await file.arrayBuffer());
-  const pdf = await pdfjsLib.getDocument({ data }).promise;
-  const pages: WorkspacePageData[] = [];
-
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 2 });
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas not supported');
-
-    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
-    const bgUrl = await canvasToUpload(canvas, `page-${pageNum}.jpg`);
-
-    pages.push({
-      id: crypto.randomUUID(),
-      width: viewport.width / 2,
-      height: viewport.height / 2,
-      backgroundType: 'pdf_page',
-      backgroundUrl: bgUrl,
-      backgroundMeta: { pdfPage: pageNum, sourceUrl, immutable: true },
-      label: `Page ${pageNum}`,
-    });
-  }
-
-  return { pages, sourceAsset };
-}
-
-async function imageToWorkspace(file: File): Promise<WorkspaceSeed> {
+async function imageToWorkspace(
+  file: File,
+  onProgress?: UploadProgressCallback
+): Promise<WorkspaceSeed> {
+  onProgress?.({ phase: 'uploading', progress: 30, message: 'Uploading image…' });
   const upload = await api.uploadFile(file);
   const url = resolveUploadUrl(upload.url);
   const pageId = crypto.randomUUID();
+  onProgress?.({ phase: 'processing', progress: 100, message: 'Ready' });
 
   return {
     workspace: true,
@@ -144,7 +96,10 @@ async function textToWorkspace(file: File, blocks: string[]): Promise<WorkspaceS
   };
 }
 
-export async function buildWorkspaceSeedFromFile(file: File): Promise<WorkspaceSeed> {
+export async function buildWorkspaceSeedFromFile(
+  file: File,
+  onProgress?: UploadProgressCallback
+): Promise<WorkspaceSeed> {
   const err = validateWorkspaceFile(file);
   if (err) throw new Error(err);
 
@@ -153,13 +108,21 @@ export async function buildWorkspaceSeedFromFile(file: File): Promise<WorkspaceS
   const title = file.name.replace(/\.[^.]+$/, '') || 'Uploaded Document';
 
   if (mime === 'application/pdf' || ext === 'pdf') {
-    const { pages, sourceAsset } = await renderPdfPages(file);
+    const { pages, sourceAsset } = await buildPdfPagesFromUpload(file, (done, total, label) => {
+      onProgress?.({
+        phase: done < total ? 'uploading' : 'processing',
+        progress: Math.round((done / total) * 100),
+        message: label,
+      });
+    });
     return { workspace: true, pages, elements: [], sourceAsset };
   }
 
   if (mime.startsWith('image/') || ['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
-    return imageToWorkspace(file);
+    return imageToWorkspace(file, onProgress);
   }
+
+  onProgress?.({ phase: 'processing', progress: 20, message: 'Reading file…' });
 
   if (
     mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
@@ -168,12 +131,14 @@ export async function buildWorkspaceSeedFromFile(file: File): Promise<WorkspaceS
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
     const blocks = result.value.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+    onProgress?.({ phase: 'processing', progress: 100, message: 'Ready' });
     return textToWorkspace(file, blocks.length ? blocks : ['Imported document — start editing.']);
   }
 
   if (mime.startsWith('text/') || ext === 'txt' || ext === 'md') {
     const text = await file.text();
     const blocks = text.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+    onProgress?.({ phase: 'processing', progress: 100, message: 'Ready' });
     return textToWorkspace(file, blocks.length ? blocks : [text.trim() || title]);
   }
 

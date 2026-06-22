@@ -108,12 +108,13 @@ export function EditorHeaderActions({
 }: EditorHeaderActionsProps) {
   const [zoomOpen, setZoomOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
+  const moreBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!moreOpen) return;
     const close = (e: MouseEvent) => {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+      if (moreBtnRef.current?.contains(e.target as Node)) return;
+      setMoreOpen(false);
     };
     window.document.addEventListener('mousedown', close);
     return () => window.document.removeEventListener('mousedown', close);
@@ -153,9 +154,11 @@ export function EditorHeaderActions({
         </ToolGroup>
       )}
 
-      <div className="relative" ref={moreRef}>
+      <div className="relative">
         <button
+          ref={moreBtnRef}
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => setMoreOpen((v) => !v)}
           className={clsx(
             'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-sm font-medium transition-colors',
@@ -165,7 +168,14 @@ export function EditorHeaderActions({
           <MoreHorizontal size={16} />
           <span className="hidden sm:inline">More</span>
         </button>
-        <ToolbarDropdown open={moreOpen} align="right" width="w-52" header="Document tools">
+        <ToolbarDropdown
+          open={moreOpen}
+          anchorRef={moreBtnRef}
+          align="right"
+          width="w-52"
+          header="Document tools"
+          onClose={() => setMoreOpen(false)}
+        >
           <ToolbarMenuItem onClick={() => { onFind(); setMoreOpen(false); }}>
             <span className="flex items-center gap-2"><Search size={14} /> Find</span>
           </ToolbarMenuItem>

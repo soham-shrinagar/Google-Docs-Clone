@@ -20,14 +20,21 @@ class EmailService {
 
   private getTransporter(): Transporter {
     if (!this.transporter) {
+      const port = config.smtp.port;
+      const secure = config.smtp.secure || port === 465;
+
       this.transporter = nodemailer.createTransport({
         host: config.smtp.host,
-        port: config.smtp.port,
-        secure: config.smtp.secure,
+        port,
+        secure,
         auth: {
           user: config.smtp.user,
           pass: config.smtp.pass,
         },
+        connectionTimeout: 15_000,
+        greetingTimeout: 15_000,
+        socketTimeout: 30_000,
+        tls: { minVersion: 'TLSv1.2' },
       });
     }
     return this.transporter;
@@ -89,13 +96,17 @@ class EmailService {
     ].join('\n\n');
 
     try {
-      await this.getTransporter().sendMail({
+      const info = await this.getTransporter().sendMail({
         from: config.smtp.from,
+        replyTo: config.smtp.user,
         to,
         subject,
         text,
         html,
       });
+      if (config.nodeEnv === 'development') {
+        console.log(`[email] Share invite sent to ${to} (${info.messageId})`);
+      }
       return true;
     } catch (err) {
       console.error('[email] Failed to send share email:', err instanceof Error ? err.message : err);

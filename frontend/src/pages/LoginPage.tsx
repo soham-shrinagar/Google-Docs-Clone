@@ -15,8 +15,9 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
+  const defaultRegister = searchParams.get('register') === '1' || searchParams.get('mode') === 'signup';
   const { loginMutation, registerMutation } = useAuth();
-  const [isRegister, setIsRegister] = useState(false);
+  const [isRegister, setIsRegister] = useState(defaultRegister);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -26,6 +27,12 @@ export function LoginPage() {
     const oauthError = searchParams.get('error');
     if (oauthError && OAUTH_ERRORS[oauthError]) {
       setError(OAUTH_ERRORS[oauthError]);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get('register') === '1' || searchParams.get('mode') === 'signup') {
+      setIsRegister(true);
     }
   }, [searchParams]);
 
@@ -181,7 +188,7 @@ export function LandingPage() {
           <Link to="/login" className="btn-ghost hidden sm:inline-flex">
             Sign in
           </Link>
-          <button type="button" onClick={() => navigate('/login')} className="btn-primary">
+          <button type="button" onClick={() => navigate('/login?register=1')} className="btn-primary">
             Get started
           </button>
         </div>
@@ -198,7 +205,7 @@ export function LandingPage() {
               A document editor with live cursors, offline editing, version history, and effortless sharing.
             </p>
             <div className="flex flex-wrap gap-2 mt-8">
-              <button type="button" onClick={() => navigate('/login')} className="btn-primary">
+              <button type="button" onClick={() => navigate('/login?register=1')} className="btn-primary">
                 Start for free
               </button>
               <a href="#features" className="btn-secondary">

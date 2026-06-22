@@ -1,22 +1,39 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useDocument } from '../hooks/useApi';
 import { EditorPage } from './EditorPage';
 import { WorkspaceEditorPage } from './WorkspaceEditorPage';
+import { PageLoader } from '../components/ui/LoadingOverlay';
+import type { Document } from '../types';
 
 export function DocumentPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: document, isLoading } = useDocument(id!);
+  const location = useLocation();
+  const queryClient = useQueryClient();
 
-  if (isLoading || !document) {
+  const cached = queryClient.getQueryData<{ document: Document }>(['document', id!]);
+  const stateDoc = (location.state as { document?: Document } | null)?.document;
+
+  const { data: document, isLoading, isFetching } = useDocument(id!);
+  const resolved = document ?? cached?.document ?? stateDoc;
+
+  if (!resolved && (isLoading || isFetching)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-canvas">
-        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-      </div>
+      <PageLoader
+        message="Opening document…"
+        submessage="Loading content"
+      />
     );
   }
 
-  if ((document.documentType ?? 'RICH_TEXT') === 'WORKSPACE') {
-    return <WorkspaceEditorPage document={document} />;
+  if (!resolved) {
+    return (
+      <PageLoader message="Document not found" submessage="It may have been deleted or you lack access." />
+    );
+  }
+
+  if ((resolved.documentType ?? 'RICH_TEXT') === 'WORKSPACE') {
+    return <WorkspaceEditorPage document={resolved} />;
   }
 
   return <EditorPage />;

@@ -5,12 +5,14 @@ import type { Document } from '../types';
 import { useAuthStore } from '../store';
 import { api } from '../lib/api';
 import { SyncStatus } from '../components/editor/SyncStatus';
+import { PageLoader } from '../components/ui/LoadingOverlay';
 import { useWorkspaceSync, extractWorkspaceSeed } from '../hooks/useWorkspaceSync';
 import { WorkspaceCanvas, addBlankPageToWorkspace, insertWorkspaceImage } from '../components/workspace/WorkspaceCanvas';
 import { WorkspaceToolbar } from '../components/workspace/WorkspaceToolbar';
 import { WorkspaceLayerPanel } from '../components/workspace/WorkspaceLayerPanel';
 import { WorkspacePropertiesPanel } from '../components/workspace/WorkspacePropertiesPanel';
 import { WorkspacePageStrip } from '../components/workspace/WorkspacePageStrip';
+import { WorkspaceTextEditor } from '../components/workspace/WorkspaceTextEditor';
 import type { WorkspaceTool, WorkspaceElementData } from '../lib/workspace/types';
 import {
   deletePage,
@@ -31,7 +33,9 @@ export function WorkspaceEditorPage({ document }: Props) {
   const [zoom, setZoom] = useState(0.75);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activePageId, setActivePageId] = useState<string | null>(null);
+  const [editingElement, setEditingElement] = useState<WorkspaceElementData | null>(null);
   const imageRef = useRef<HTMLInputElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   const workspaceSeed = useMemo(
     () => extractWorkspaceSeed(document),
@@ -39,19 +43,22 @@ export function WorkspaceEditorPage({ document }: Props) {
   );
   const needsSeed = document.operationCount === 0 && !!workspaceSeed;
 
-  const { ydoc, synced, pages, elements } = useWorkspaceSync({
+  const { ydoc, synced, pages, elements, localReady } = useWorkspaceSync({
     documentId: document.id,
-    userId: user!.id,
-    userName: user!.name,
-    userColor: user!.color,
+    userId: user?.id ?? '',
+    userName: user?.name ?? '',
+    userColor: user?.color ?? '#888',
     workspaceSeed,
     needsSeed,
   });
 
+  const displayPages = pages.length > 0 ? pages : (workspaceSeed?.pages ?? []);
+  const displayElements = elements.length > 0 ? elements : (workspaceSeed?.elements ?? []);
+
   const canEdit = document.permission === 'OWNER' || document.permission === 'EDITOR';
-  const currentPageId = activePageId ?? pages[0]?.id ?? null;
-  const selectedElements = elements.filter((e) => selectedIds.includes(e.id));
-  const activePage = pages.find((p) => p.id === currentPageId) ?? null;
+  const currentPageId = activePageId ?? displayPages[0]?.id ?? null;
+  const selectedElements = displayElements.filter((e) => selectedIds.includes(e.id));
+  const activePage = displayPages.find((p) => p.id === currentPageId) ?? null;
 
   const handleTitleBlur = async () => {
     if (title !== document.title) await api.updateDocument(document.id, { title });
@@ -65,19 +72,35 @@ export function WorkspaceEditorPage({ document }: Props) {
     [ydoc]
   );
 
+  const handleEditText = useCallback((el: WorkspaceElementData) => {
+    if (el.type === 'text' || el.type === 'sticky') {
+      setEditingElement(el);
+      setSelectedIds([el.id]);
+    }
+  }, []);
+
+  const handleCommitText = (text: string) => {
+    if (!editingElement || !ydoc) {
+      setEditingElement(null);
+      return;
+    }
+    handleUpdateElement({ ...editingElement, data: { ...editingElement.data, text } });
+    setEditingElement(null);
+  };
+
   const handleToggleVisible = (id: string) => {
-    const el = elements.find((e) => e.id === id);
+    const el = displayElements.find((e) => e.id === id);
     if (el && ydoc) upsertElement(ydoc, { ...el, visible: !el.visible });
   };
 
   const handleToggleLocked = (id: string) => {
-    const el = elements.find((e) => e.id === id);
+    const el = displayElements.find((e) => e.id === id);
     if (el && ydoc) upsertElement(ydoc, { ...el, locked: !el.locked });
   };
 
   const handleAddPage = () => {
     if (!ydoc) return;
-    const id = addBlankPageToWorkspace(ydoc, `Page ${pages.length + 1}`);
+    const id = addBlankPageToWorkspace(ydoc, `Page ${displayPages.length + 1}`);
     setActivePageId(id);
   };
 
@@ -89,7 +112,7 @@ export function WorkspaceEditorPage({ document }: Props) {
   };
 
   const handleDeletePage = () => {
-    if (!ydoc || !currentPageId || pages.length <= 1) return;
+    if (!ydoc || !currentPageId || displayPages.length <= 1) return;
     if (!confirm('Delete this page?')) return;
     deletePage(ydoc, currentPageId);
     setActivePageId(null);
@@ -106,7 +129,7 @@ export function WorkspaceEditorPage({ document }: Props) {
 
   const handleImageFile = async (file: File) => {
     if (!ydoc || !currentPageId) return;
-    const id = await insertWorkspaceImage(ydoc, currentPageId, file, elements);
+    const id = await insertWorkspaceImage(ydoc, currentPageId, file, displayElements);
     setSelectedIds([id]);
     setActiveTool('select');
   };
@@ -116,9 +139,9 @@ export function WorkspaceEditorPage({ document }: Props) {
     if (!format) return;
     try {
       if (format.toLowerCase().startsWith('p')) {
-        await exportWorkspaceAsPdf(pages, elements, title);
+        await exportWorkspaceAsPdf(displayPages, displayElements, title);
       } else {
-        await exportWorkspaceAsPngZip(pages, elements, title);
+        await exportWorkspaceAsPngZip(displayPages, displayElements, title);
       }
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Export failed');
@@ -130,14 +153,14 @@ export function WorkspaceEditorPage({ document }: Props) {
     window.document.getElementById(`ws-page-${pageId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  if (!user || !ydoc) {
+  if (!user) return null;
+
+  if (!ydoc) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-canvas">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted">{synced ? 'Loading workspace…' : 'Connecting…'}</p>
-        </div>
-      </div>
+      <PageLoader
+        message={synced ? 'Loading workspace…' : 'Connecting…'}
+        submessage={needsSeed ? 'Preparing your document' : undefined}
+      />
     );
   }
 
@@ -175,16 +198,23 @@ export function WorkspaceEditorPage({ document }: Props) {
       </header>
 
       <div className="flex flex-1 min-h-0">
-        <div className="flex-1 overflow-y-auto min-w-0 bg-[#e8eaed]">
+        <div className="flex-1 overflow-y-auto min-w-0 bg-[#e8eaed] relative">
+          {!localReady && displayPages.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-[#e8eaed]/80 z-10">
+              <PageLoader message="Syncing pages…" compact />
+            </div>
+          )}
           <WorkspaceCanvas
             ydoc={ydoc}
-            pages={pages}
-            elements={elements}
+            pages={displayPages}
+            elements={displayElements}
             zoom={zoom}
             activeTool={activeTool}
             selectedIds={selectedIds}
             editable={canEdit}
             onSelect={setSelectedIds}
+            onEditText={handleEditText}
+            canvasContainerRef={canvasContainerRef}
           />
         </div>
 
@@ -195,7 +225,7 @@ export function WorkspaceEditorPage({ document }: Props) {
         />
 
         <WorkspaceLayerPanel
-          elements={elements}
+          elements={displayElements}
           selectedIds={selectedIds}
           onSelect={setSelectedIds}
           onToggleVisible={handleToggleVisible}
@@ -204,10 +234,20 @@ export function WorkspaceEditorPage({ document }: Props) {
       </div>
 
       <WorkspacePageStrip
-        pages={pages}
+        pages={displayPages}
         activePageId={currentPageId}
         onSelectPage={scrollToPage}
       />
+
+      {editingElement && (
+        <WorkspaceTextEditor
+          element={editingElement}
+          zoom={zoom}
+          pageContainer={canvasContainerRef.current}
+          onCommit={handleCommitText}
+          onCancel={() => setEditingElement(null)}
+        />
+      )}
 
       <input
         ref={imageRef}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Copy, Check, Link2, X, Users, Mail } from 'lucide-react';
+import { Copy, Check, Link2, X, Users, Mail, Loader2 } from 'lucide-react';
 import { api } from '../../lib/api';
 
 interface SharePanelProps {
@@ -54,17 +54,20 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
   };
 
   const handleShareEmail = async () => {
-    if (!email.trim()) return;
+    const trimmed = email.trim();
+    if (!trimmed) return;
     setLoading(true);
     setError('');
     setSuccess('');
     try {
-      const result = await api.shareDocument(documentId, email.trim(), role);
+      const result = await api.shareDocument(documentId, trimmed, role);
       if (result.emailSent) {
-        setSuccess(`Invite email sent to ${email.trim()} with a link to open the document.`);
-      } else {
         setSuccess(
-          `Shared with ${email.trim()}. Email not sent — add SMTP settings in .env to enable email invites.`
+          `Invite sent to ${trimmed}. Check inbox and spam/promotions — it may take a minute to arrive.`
+        );
+      } else {
+        setError(
+          `Access granted for ${trimmed}, but the email could not be sent. Copy the share link above and send it manually.`
         );
       }
       setEmail('');
@@ -78,7 +81,7 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
   };
 
   return (
-    <div className="fixed right-4 top-14 w-[min(calc(100vw-2rem),24rem)] surface-card z-50 p-5 animate-fade-up">
+    <div className="fixed right-4 top-14 w-[min(calc(100vw-2rem),22rem)] sm:w-[min(calc(100vw-2rem),28rem)] surface-card z-50 p-5 animate-fade-up">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-ink flex items-center gap-2">
           <Users size={18} className="text-accent" /> Share document
@@ -124,21 +127,23 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
         <label className="text-xs font-medium text-muted uppercase tracking-wide flex items-center gap-1.5">
           <Mail size={12} /> Invite by email
         </label>
-        <p className="text-xs text-muted mb-2 mt-1">
+        <p className="text-xs text-muted mb-3 mt-1">
           We&apos;ll email them a direct link to open this document. New users can sign up via the link.
         </p>
-        <div className="flex flex-col sm:flex-row gap-2 mt-1">
+        <div className="space-y-2">
           <input
             type="email"
             placeholder="collaborator@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="input-field flex-1 min-w-0 !py-2"
+            onKeyDown={(e) => e.key === 'Enter' && !loading && email.trim() && handleShareEmail()}
+            className="input-field w-full !py-2.5 !h-10 text-sm"
+            autoComplete="email"
           />
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="input-field w-full sm:w-auto sm:min-w-[120px] !py-2"
+            className="input-field w-full !py-2.5 !h-10 text-sm"
           >
             <option value="EDITOR">Editor</option>
             <option value="COMMENTER">Commenter</option>
@@ -149,14 +154,19 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
           type="button"
           onClick={handleShareEmail}
           disabled={loading || !email.trim()}
-          className="btn-primary w-full mt-3 !py-2"
+          className="btn-primary w-full mt-3 !py-2.5 flex items-center justify-center gap-2"
         >
+          {loading ? <Loader2 size={16} className="animate-spin" /> : null}
           Send email invite
         </button>
       </div>
 
-      {error && <p className="text-sm text-ink bg-canvas border border-line rounded-lg px-3 py-2 mb-2">{error}</p>}
-      {success && <p className="text-sm text-accent bg-accent-soft rounded-lg px-3 py-2 mb-2">{success}</p>}
+      {error && (
+        <p className="text-sm text-ink bg-canvas border border-line rounded-lg px-3 py-2 mb-2">{error}</p>
+      )}
+      {success && (
+        <p className="text-sm text-accent bg-accent-soft rounded-lg px-3 py-2 mb-2">{success}</p>
+      )}
 
       {collaborators.length > 0 && (
         <div className="border-t border-line pt-3">

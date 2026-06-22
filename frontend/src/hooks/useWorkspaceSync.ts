@@ -29,6 +29,7 @@ export function useWorkspaceSync({
   const [provider, setProvider] = useState<WebsocketProvider | null>(null);
   const [awareness, setAwareness] = useState<Awareness | null>(null);
   const [synced, setSynced] = useState(false);
+  const [localReady, setLocalReadyState] = useState(false);
   const [pages, setPages] = useState<WorkspacePageData[]>([]);
   const [elements, setElements] = useState<WorkspaceElementData[]>([]);
 
@@ -59,8 +60,13 @@ export function useWorkspaceSync({
         return;
       }
 
+      setYdoc(doc);
+
       const persistence = new IndexeddbPersistence(idbName, doc);
-      persistence.on('synced', () => setLocalReady(true));
+      persistence.on('synced', () => {
+        setLocalReady(true);
+        setLocalReadyState(true);
+      });
 
       const wsHost = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3001`;
       const token = localStorage.getItem('token') || '';
@@ -101,7 +107,6 @@ export function useWorkspaceSync({
         }, 400);
       });
 
-      setYdoc(doc);
       setProvider(prov);
       setAwareness(aw);
     }
@@ -115,6 +120,7 @@ export function useWorkspaceSync({
       setProvider(null);
       setAwareness(null);
       setSynced(false);
+      setLocalReadyState(false);
       resetConnectionState();
     };
   }, [documentId, userId, userName, userColor, needsSeed, resetConnectionState, setConnectionStatus, setLocalReady, setSaveState]);
@@ -127,7 +133,7 @@ export function useWorkspaceSync({
     });
   }, [ydoc]);
 
-  return { ydoc, provider, awareness, synced, pages, elements };
+  return { ydoc, provider, awareness, synced, localReady, pages, elements };
 }
 
 export function extractWorkspaceSeed(document: {

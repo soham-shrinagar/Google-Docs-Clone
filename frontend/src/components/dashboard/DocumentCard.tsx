@@ -8,6 +8,7 @@ interface DocumentCardProps {
   document: Document;
   onDelete: (id: string) => void;
   onPin: (id: string) => void;
+  onRename: (id: string, title: string) => void;
 }
 
 function DocPreview({ isWorkspace }: { isWorkspace?: boolean }) {
@@ -31,7 +32,7 @@ function DocPreview({ isWorkspace }: { isWorkspace?: boolean }) {
   );
 }
 
-export function DocumentCard({ document: doc, onDelete, onPin }: DocumentCardProps) {
+export function DocumentCard({ document: doc, onDelete, onPin, onRename }: DocumentCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -45,6 +46,16 @@ export function DocumentCard({ document: doc, onDelete, onPin }: DocumentCardPro
     window.document.addEventListener('mousedown', close);
     return () => window.document.removeEventListener('mousedown', close);
   }, [menuOpen]);
+
+  const handleRename = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuOpen(false);
+    const next = window.prompt('Rename document', doc.title);
+    if (next && next.trim() && next.trim() !== doc.title) {
+      onRename(doc.id, next.trim());
+    }
+  };
 
   const isWorkspace = doc.documentType === 'WORKSPACE';
 
@@ -92,13 +103,22 @@ export function DocumentCard({ document: doc, onDelete, onPin }: DocumentCardPro
                   {doc.isPinned ? 'Unpin' : 'Pin'}
                 </button>
                 {doc.permission === 'OWNER' && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(doc.id); setMenuOpen(false); }}
-                    className="w-full px-3 py-1.5 text-left text-sm text-muted hover:bg-surface"
-                  >
-                    Delete
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleRename}
+                      className="w-full px-3 py-1.5 text-left text-sm hover:bg-surface"
+                    >
+                      Rename
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(doc.id); setMenuOpen(false); }}
+                      className="w-full px-3 py-1.5 text-left text-sm text-muted hover:bg-surface"
+                    >
+                      Delete
+                    </button>
+                  </>
                 )}
               </div>
             )}

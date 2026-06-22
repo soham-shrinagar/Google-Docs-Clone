@@ -30,6 +30,7 @@ import { IndexeddbPersistence } from 'y-indexeddb';
 import type { Awareness } from 'y-protocols/awareness';
 import type { PageZoomMode } from '../lib/pageZoom';
 import type { IndexeddbPersistence as IndexeddbPersistenceType } from 'y-indexeddb';
+import { PageLoader } from '../components/ui/LoadingOverlay';
 
 const ZOOM_STORAGE_KEY = 'collabdocs-page-zoom';
 
@@ -272,12 +273,7 @@ export function EditorPage() {
 
   if (isLoading || !document) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-mesh">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-muted font-medium">Loading document…</p>
-        </div>
-      </div>
+      <PageLoader message="Opening document…" submessage="Connecting to editor" />
     );
   }
 

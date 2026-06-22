@@ -23,17 +23,25 @@ interface Props {
   editable: boolean;
   onSelect: (id: string, additive?: boolean) => void;
   onChange: (element: WorkspaceElementData) => void;
+  onDoubleClickText?: (element: WorkspaceElementData) => void;
 }
 
-export function WorkspaceElementNode({ element, editable, onSelect, onChange }: Props) {
+export function WorkspaceElementNode({
+  element,
+  editable,
+  onSelect,
+  onChange,
+  onDoubleClickText,
+}: Props) {
   const groupRef = useRef<Konva.Group>(null);
   const { transform, style, type, data, visible, locked } = element;
+  const nodeId = `el-${element.id}`;
   const bgImage = useImage(type === 'image' ? (data.src as string | undefined) : undefined);
 
   if (!visible) return null;
 
   const dragProps = {
-    draggable: editable && !locked && type !== 'pen',
+    draggable: editable && !locked && type !== 'pen' && activeToolAllowsDrag(type),
     onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
       e.cancelBubble = true;
       onSelect(element.id, e.evt.shiftKey);
@@ -69,9 +77,25 @@ export function WorkspaceElementNode({ element, editable, onSelect, onChange }: 
     },
   };
 
+  const textDblClick = {
+    onDblClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
+      e.cancelBubble = true;
+      if (editable && !locked && onDoubleClickText) {
+        onDoubleClickText(element);
+      }
+    },
+    onDblTap: (e: Konva.KonvaEventObject<Event>) => {
+      e.cancelBubble = true;
+      if (editable && !locked && onDoubleClickText) {
+        onDoubleClickText(element);
+      }
+    },
+  };
+
   if (type === 'text' || type === 'sticky') {
     return (
       <Group
+        id={nodeId}
         ref={groupRef}
         x={transform.x}
         y={transform.y}
@@ -80,6 +104,7 @@ export function WorkspaceElementNode({ element, editable, onSelect, onChange }: 
         rotation={transform.rotation}
         opacity={style.opacity ?? 1}
         {...dragProps}
+        {...textDblClick}
       >
         {type === 'sticky' && (
           <Rect
@@ -109,62 +134,73 @@ export function WorkspaceElementNode({ element, editable, onSelect, onChange }: 
 
   if (type === 'image' && bgImage) {
     return (
-      <KonvaImage
+      <Group
+        id={nodeId}
+        ref={groupRef}
         x={transform.x}
         y={transform.y}
         width={transform.width}
         height={transform.height}
         rotation={transform.rotation}
-        image={bgImage}
         opacity={style.opacity ?? 1}
         {...dragProps}
-      />
+      >
+        <KonvaImage
+          width={transform.width}
+          height={transform.height}
+          image={bgImage}
+        />
+      </Group>
     );
   }
 
   if (type === 'rect' || type === 'highlight') {
     return (
-      <Rect
-        ref={groupRef as unknown as React.RefObject<Konva.Rect>}
+      <Group
+        id={nodeId}
+        ref={groupRef}
         x={transform.x}
         y={transform.y}
         width={transform.width}
         height={transform.height}
         rotation={transform.rotation}
-        fill={style.fill ?? (type === 'highlight' ? '#fef08a88' : '#3b82f622')}
-        stroke={style.stroke ?? '#3b82f6'}
-        strokeWidth={style.strokeWidth ?? (type === 'highlight' ? 0 : 2)}
-        cornerRadius={4}
         opacity={style.opacity ?? 1}
         {...dragProps}
-      />
+      >
+        <Rect
+          width={transform.width}
+          height={transform.height}
+          fill={style.fill ?? (type === 'highlight' ? '#fef08a88' : '#3b82f622')}
+          stroke={style.stroke ?? '#3b82f6'}
+          strokeWidth={style.strokeWidth ?? (type === 'highlight' ? 0 : 2)}
+          cornerRadius={4}
+        />
+      </Group>
     );
   }
 
   if (type === 'circle') {
     return (
-      <Circle
-        x={transform.x + transform.width / 2}
-        y={transform.y + transform.height / 2}
-        radius={Math.min(transform.width, transform.height) / 2}
+      <Group
+        id={nodeId}
+        ref={groupRef}
+        x={transform.x}
+        y={transform.y}
+        width={transform.width}
+        height={transform.height}
         rotation={transform.rotation}
-        fill={style.fill ?? '#3b82f622'}
-        stroke={style.stroke ?? '#3b82f6'}
-        strokeWidth={style.strokeWidth ?? 2}
-        draggable={editable && !locked}
         opacity={style.opacity ?? 1}
-        onClick={(e) => { e.cancelBubble = true; onSelect(element.id, e.evt.shiftKey); }}
-        onDragEnd={(e) => {
-          onChange({
-            ...element,
-            transform: {
-              ...transform,
-              x: e.target.x() - transform.width / 2,
-              y: e.target.y() - transform.height / 2,
-            },
-          });
-        }}
-      />
+        {...dragProps}
+      >
+        <Circle
+          x={transform.width / 2}
+          y={transform.height / 2}
+          radius={Math.min(transform.width, transform.height) / 2}
+          fill={style.fill ?? '#3b82f622'}
+          stroke={style.stroke ?? '#3b82f6'}
+          strokeWidth={style.strokeWidth ?? 2}
+        />
+      </Group>
     );
   }
 
@@ -172,6 +208,7 @@ export function WorkspaceElementNode({ element, editable, onSelect, onChange }: 
     const points = (data.points as number[]) ?? [0, 0, transform.width, transform.height];
     return (
       <Line
+        id={nodeId}
         points={points}
         x={transform.x}
         y={transform.y}
@@ -182,7 +219,7 @@ export function WorkspaceElementNode({ element, editable, onSelect, onChange }: 
         tension={type === 'pen' ? 0.4 : 0}
         opacity={style.opacity ?? 1}
         draggable={editable && !locked}
-        onClick={(e) => { e.cancelBubble = true; onSelect(element.id); }}
+        onClick={(e) => { e.cancelBubble = true; onSelect(element.id, e.evt.shiftKey); }}
         onDragEnd={(e) => {
           onChange({
             ...element,
@@ -195,28 +232,37 @@ export function WorkspaceElementNode({ element, editable, onSelect, onChange }: 
 
   if (type === 'arrow') {
     return (
-      <Arrow
-        ref={groupRef as unknown as React.RefObject<Konva.Arrow>}
+      <Group
+        id={nodeId}
+        ref={groupRef}
         x={transform.x}
         y={transform.y}
-        points={(data.points as number[]) ?? [0, 0, transform.width, 0]}
-        fill={style.fill ?? '#3b82f6'}
-        stroke={style.stroke ?? '#3b82f6'}
-        strokeWidth={style.strokeWidth ?? 2}
-        pointerLength={10}
-        pointerWidth={10}
         rotation={transform.rotation}
+        opacity={style.opacity ?? 1}
         draggable={editable && !locked}
-        onClick={(e) => { e.cancelBubble = true; onSelect(element.id); }}
+        onClick={(e) => { e.cancelBubble = true; onSelect(element.id, e.evt.shiftKey); }}
         onDragEnd={(e) => {
           onChange({
             ...element,
             transform: { ...transform, x: e.target.x(), y: e.target.y() },
           });
         }}
-      />
+      >
+        <Arrow
+          points={(data.points as number[]) ?? [0, 0, transform.width, 0]}
+          fill={style.fill ?? '#3b82f6'}
+          stroke={style.stroke ?? '#3b82f6'}
+          strokeWidth={style.strokeWidth ?? 2}
+          pointerLength={10}
+          pointerWidth={10}
+        />
+      </Group>
     );
   }
 
   return null;
+}
+
+function activeToolAllowsDrag(type: string): boolean {
+  return type !== 'line';
 }

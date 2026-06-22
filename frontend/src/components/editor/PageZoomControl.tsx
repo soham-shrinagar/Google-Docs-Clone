@@ -13,23 +13,24 @@ interface PageZoomControlProps {
 }
 
 export function PageZoomControl({ value, onChange, open, onToggle, onClose }: PageZoomControlProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        onClose();
-      }
+      if (btnRef.current?.contains(e.target as Node)) return;
+      onClose();
     };
     window.document.addEventListener('mousedown', close);
     return () => window.document.removeEventListener('mousedown', close);
   }, [open, onClose]);
 
   return (
-    <div className="relative" ref={rootRef}>
+    <div className="relative">
       <button
+        ref={btnRef}
         type="button"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={onToggle}
         className={clsx(
           'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-sm font-medium transition-colors shrink-0',
@@ -43,7 +44,14 @@ export function PageZoomControl({ value, onChange, open, onToggle, onClose }: Pa
         <span className="min-w-[4.5rem] text-left">{zoomModeLabel(value)}</span>
         <ChevronDown size={14} className="text-muted" />
       </button>
-      <ToolbarDropdown open={open} align="right" width="w-44" header="Page zoom">
+      <ToolbarDropdown
+        open={open}
+        anchorRef={btnRef}
+        align="right"
+        width="w-44"
+        header="Page zoom"
+        onClose={onClose}
+      >
         {PAGE_ZOOM_OPTIONS.map((opt) => (
           <ToolbarMenuItem
             key={opt.value}

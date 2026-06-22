@@ -5,11 +5,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Navbar } from '../components/layout/Navbar';
 import { DocumentCard } from '../components/dashboard/DocumentCard';
 import { TemplatePicker } from '../components/dashboard/TemplatePicker';
+import { LoadingOverlay, type LoadingPhase } from '../components/ui/LoadingOverlay';
 import { useDocuments, useRecentDocuments, useCreateDocument, useDeleteDocument } from '../hooks/useApi';
 import { useDashboardStore, useAuthStore } from '../store';
 import { api } from '../lib/api';
 import { buildUploadInitialContent } from '../lib/uploadProcessor';
 import { buildWorkspaceSeedFromFile, isWorkspaceFile, WORKSPACE_ACCEPT } from '../lib/workspace/uploadSeed';
+import type { Document } from '../types';
 
 const QUICK_ACTIONS = [
   { id: 'blank', label: 'Blank document', desc: 'Start from scratch', icon: FilePlus },
@@ -17,6 +19,13 @@ const QUICK_ACTIONS = [
   { id: 'upload', label: 'Upload file', desc: 'PDF, Word, image', icon: Upload },
   { id: 'analytics', label: 'AI analytics', desc: 'Usage & activity', icon: BarChart3 },
 ] as const;
+
+type LoadingState = {
+  phase: LoadingPhase;
+  message?: string;
+  progress?: number;
+  submessage?: string;
+};
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -29,47 +38,72 @@ export function DashboardPage() {
   const { data: recentDocs } = useRecentDocuments();
   const createDoc = useCreateDocument();
   const deleteDoc = useDeleteDocument();
-  const [creating, setCreating] = useState(false);
+  const [loading, setLoading] = useState<LoadingState>({ phase: 'idle' });
   const [showTemplates, setShowTemplates] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState('');
 
+  const isBusy = loading.phase !== 'idle';
+
+  const prefetchDocument = (document: Document) => {
+    queryClient.setQueryData(['document', document.id], { document });
+  };
+
+  const openDocument = (document: Document) => {
+    prefetchDocument(document);
+    navigate(`/document/${document.id}`, { state: { document } });
+  };
+
   const handleCreate = async (templateId?: string) => {
-    setCreating(true);
+    setLoading({ phase: 'creating', message: 'Creating document…', progress: 30 });
     setError('');
     try {
+      setLoading({ phase: 'creating', message: 'Creating document…', progress: 60 });
       const { document } = await createDoc.mutateAsync(
         templateId ? { templateId } : undefined
       );
       setShowTemplates(false);
-      navigate(`/document/${document.id}`);
+      setLoading({ phase: 'opening', message: 'Opening document…', progress: 100 });
+      openDocument(document);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create document');
     } finally {
-      setCreating(false);
+      setLoading({ phase: 'idle' });
     }
   };
 
   const handleUpload = async (file: File) => {
-    setCreating(true);
     setError('');
     try {
       const title = file.name.replace(/\.[^.]+$/, '') || 'Uploaded Document';
 
       if (isWorkspaceFile(file)) {
-        const seed = await buildWorkspaceSeedFromFile(file);
+        setLoading({ phase: 'uploading', message: 'Uploading file…', progress: 10 });
+        const seed = await buildWorkspaceSeedFromFile(file, (info) => {
+          setLoading({
+            phase: info.phase === 'creating' ? 'creating' : info.phase === 'uploading' ? 'uploading' : 'processing',
+            message: info.message,
+            progress: info.progress,
+            submessage: file.name,
+          });
+        });
+        setLoading({ phase: 'creating', message: 'Creating workspace…', progress: 85 });
         const { document } = await api.createWorkspace({ title, seed });
-        navigate(`/document/${document.id}`);
+        setLoading({ phase: 'opening', message: 'Opening document…', progress: 100 });
+        openDocument(document);
       } else {
+        setLoading({ phase: 'uploading', message: 'Uploading file…', progress: 20, submessage: file.name });
         const seedContent = await buildUploadInitialContent(file);
+        setLoading({ phase: 'creating', message: 'Creating document…', progress: 70 });
         const { document } = await createDoc.mutateAsync({ title, seedContent });
-        navigate(`/document/${document.id}`);
+        setLoading({ phase: 'opening', message: 'Opening document…', progress: 100 });
+        openDocument(document);
       }
       setShowTemplates(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
-      setCreating(false);
+      setLoading({ phase: 'idle' });
     }
   };
 
@@ -81,6 +115,11 @@ export function DashboardPage() {
 
   const handlePin = async (id: string) => {
     await api.togglePin(id);
+    await queryClient.invalidateQueries({ queryKey: ['documents'] });
+  };
+
+  const handleRename = async (id: string, title: string) => {
+    await api.updateDocument(id, { title });
     await queryClient.invalidateQueries({ queryKey: ['documents'] });
   };
 
@@ -103,6 +142,14 @@ export function DashboardPage() {
   return (
     <div className="min-h-screen bg-canvas">
       <Navbar />
+
+      <LoadingOverlay
+        open={isBusy}
+        phase={loading.phase}
+        message={loading.message}
+        progress={loading.progress}
+        submessage={loading.submessage}
+      />
 
       <main className="max-w-6xl mx-auto px-5 py-6 animate-fade-up">
         <header className="mb-8">
@@ -131,10 +178,10 @@ export function DashboardPage() {
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
-          onClick={() => uploadRef.current?.click()}
+          onClick={() => !isBusy && uploadRef.current?.click()}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && uploadRef.current?.click()}
+          onKeyDown={(e) => e.key === 'Enter' && !isBusy && uploadRef.current?.click()}
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -146,7 +193,7 @@ export function DashboardPage() {
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); void handleCreate(); }}
-              disabled={creating}
+              disabled={isBusy}
               className="btn-primary shrink-0"
             >
               <FilePlus size={16} />
@@ -161,7 +208,7 @@ export function DashboardPage() {
               key={id}
               type="button"
               onClick={() => handleQuickAction(id)}
-              disabled={creating && id !== 'analytics'}
+              disabled={isBusy && id !== 'analytics'}
               className="flex items-start gap-3 p-3.5 text-left card-interactive"
             >
               <div className="w-8 h-8 rounded-md bg-surface border border-line flex items-center justify-center shrink-0">
@@ -255,6 +302,7 @@ export function DashboardPage() {
                 document={doc}
                 onDelete={handleDelete}
                 onPin={handlePin}
+                onRename={handleRename}
               />
             ))}
           </div>
@@ -268,11 +316,11 @@ export function DashboardPage() {
               Upload a file, pick a template, or start with a blank document.
             </p>
             <div className="flex flex-wrap justify-center gap-2">
-              <button type="button" onClick={() => void handleCreate()} className="btn-primary">
+              <button type="button" onClick={() => void handleCreate()} disabled={isBusy} className="btn-primary">
                 <FilePlus size={16} />
                 Blank document
               </button>
-              <button type="button" onClick={() => uploadRef.current?.click()} className="btn-secondary">
+              <button type="button" onClick={() => uploadRef.current?.click()} disabled={isBusy} className="btn-secondary">
                 <Upload size={16} />
                 Upload file
               </button>
@@ -286,7 +334,7 @@ export function DashboardPage() {
         onClose={() => setShowTemplates(false)}
         onSelect={handleCreate}
         onUpload={handleUpload}
-        loading={creating}
+        loading={isBusy}
       />
     </div>
   );

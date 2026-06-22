@@ -23,8 +23,10 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !user.passwordHash) throw new Error('Invalid credentials');
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user) throw new Error('User not found');
+    if (!user.passwordHash) throw new Error('This account uses Google sign-in. Please continue with Google.');
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new Error('Invalid credentials');

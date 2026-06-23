@@ -10,7 +10,7 @@ const router = Router();
 
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(5),
   name: z.string().min(1).max(100),
 });
 
@@ -143,7 +143,9 @@ router.get('/google/callback', async (req: AuthRequest, res: Response) => {
     });
 
     setTokenCookie(res, result.token);
-    res.redirect(`${config.clientUrl}/auth/callback`);
+    // Pass token in URL hash — Vercel (frontend) and Render (API) are different domains,
+    // so the httpOnly cookie cannot be read by the frontend after redirect.
+    res.redirect(`${config.clientUrl}/auth/callback#token=${encodeURIComponent(result.token)}`);
   } catch (err) {
     console.error('Google OAuth callback error:', err);
     res.redirect(`${config.clientUrl}/login?error=oauth_failed`);

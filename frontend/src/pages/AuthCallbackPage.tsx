@@ -4,6 +4,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store';
 
+function readTokenFromHash(): string | null {
+  const hash = window.location.hash.replace(/^#/, '');
+  if (!hash) return null;
+  const params = new URLSearchParams(hash);
+  return params.get('token');
+}
+
 export function AuthCallbackPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -14,7 +21,16 @@ export function AuthCallbackPage() {
 
     async function finishSignIn() {
       try {
-        const { user, token } = await api.completeOAuthSession();
+        const hashToken = readTokenFromHash();
+        if (hashToken) {
+          localStorage.setItem('token', hashToken);
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+
+        const { user, token } = hashToken
+          ? { user: (await api.getMe()).user, token: hashToken }
+          : await api.completeOAuthSession();
+
         if (cancelled) return;
 
         localStorage.setItem('token', token);

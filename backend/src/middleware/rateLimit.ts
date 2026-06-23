@@ -13,9 +13,3 @@ export const authLimiter = rateLimit({
   max: 20,
   message: { error: 'Too many authentication attempts' },
 });
-
-export const wsLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 60,
-  message: { error: 'Too many WebSocket connection attempts' },
-});

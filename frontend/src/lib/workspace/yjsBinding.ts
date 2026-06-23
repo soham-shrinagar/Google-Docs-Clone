@@ -88,14 +88,6 @@ export function deleteElement(ydoc: Y.Doc, elementId: string) {
   ydoc.getMap(WS_ELEMENTS).delete(elementId);
 }
 
-export function upsertPage(ydoc: Y.Doc, page: WorkspacePageData, index?: number) {
-  const pageOrder = ydoc.getArray<string>(WS_PAGE_ORDER);
-  ydoc.getMap(WS_PAGES).set(page.id, pageToY(page));
-  if (index !== undefined && !pageOrder.toArray().includes(page.id)) {
-    pageOrder.insert(index, [page.id]);
-  }
-}
-
 export function deletePage(ydoc: Y.Doc, pageId: string) {
   const pageOrder = ydoc.getArray<string>(WS_PAGE_ORDER);
   const idx = pageOrder.toArray().indexOf(pageId);
@@ -106,14 +98,6 @@ export function deletePage(ydoc: Y.Doc, pageId: string) {
   for (const [id, el] of elements.entries()) {
     if (el.pageId === pageId) elements.delete(id);
   }
-}
-
-export function reorderPages(ydoc: Y.Doc, pageIds: string[]) {
-  const pageOrder = ydoc.getArray<string>(WS_PAGE_ORDER);
-  ydoc.transact(() => {
-    pageOrder.delete(0, pageOrder.length);
-    pageOrder.push(pageIds);
-  });
 }
 
 export function duplicatePage(ydoc: Y.Doc, pageId: string, newPageId: string) {

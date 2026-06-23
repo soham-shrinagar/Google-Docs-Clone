@@ -27,9 +27,7 @@ async function loadPdf(sourceUrl: string): Promise<pdfjsLib.PDFDocumentProxy> {
 
 export async function renderPdfPageToCanvas(
   sourceUrl: string,
-  pageNum: number,
-  displayWidth: number,
-  displayHeight: number
+  pageNum: number
 ): Promise<HTMLCanvasElement> {
   const scale = 1.5;
   const key = cacheKey(sourceUrl, pageNum, scale);
@@ -50,17 +48,6 @@ export async function renderPdfPageToCanvas(
 
   pageImageCache.set(key, task);
   return task;
-}
-
-export function getPdfPageDimensions(
-  sourceUrl: string,
-  pageNum: number
-): Promise<{ width: number; height: number }> {
-  return loadPdf(sourceUrl).then(async (pdf) => {
-    const page = await pdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 1 });
-    return { width: viewport.width, height: viewport.height };
-  });
 }
 
 export type PdfUploadProgress = (done: number, total: number, label: string) => void;

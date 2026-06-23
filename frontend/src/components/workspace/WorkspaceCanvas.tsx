@@ -17,8 +17,6 @@ import { resolveUploadUrl } from '../../lib/uploads';
 import { api } from '../../lib/api';
 import { renderPdfPageToCanvas } from '../../lib/workspace/pdfPageRender';
 
-const PAGE_GAP = 48;
-
 function useBgImage(url?: string | null) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   useEffect(() => {
@@ -50,7 +48,7 @@ function usePdfPageBackground(page: WorkspacePageData) {
     if (renderMode === 'client' && sourceUrl && pdfPage) {
       setLoading(true);
       let cancelled = false;
-      renderPdfPageToCanvas(sourceUrl, pdfPage, page.width, page.height)
+      renderPdfPageToCanvas(sourceUrl, pdfPage)
         .then((canvas) => {
           if (cancelled) return;
           const img = new window.Image();

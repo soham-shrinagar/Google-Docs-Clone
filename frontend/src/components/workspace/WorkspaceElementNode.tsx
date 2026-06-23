@@ -41,7 +41,7 @@ export function WorkspaceElementNode({
   if (!visible) return null;
 
   const dragProps = {
-    draggable: editable && !locked && type !== 'pen' && activeToolAllowsDrag(type),
+    draggable: editable && !locked && type !== 'pen' && type !== 'line',
     onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
       e.cancelBubble = true;
       onSelect(element.id, e.evt.shiftKey);
@@ -261,8 +261,4 @@ export function WorkspaceElementNode({
   }
 
   return null;
-}
-
-function activeToolAllowsDrag(type: string): boolean {
-  return type !== 'line';
 }

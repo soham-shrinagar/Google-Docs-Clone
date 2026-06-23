@@ -279,10 +279,6 @@ export const api = {
     );
   },
 
-  listDictionaryWords() {
-    return request<{ words: string[] }>(API_URL, '/api/ai/dictionary');
-  },
-
   addDictionaryWord(word: string) {
     return request<{ word: string }>(API_URL, '/api/ai/dictionary', {
       method: 'POST',

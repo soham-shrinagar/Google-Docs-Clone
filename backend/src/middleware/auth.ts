@@ -58,16 +58,3 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
     res.status(401).json({ error: 'Invalid token' });
   }
 }
-
-export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction) {
-  const token =
-    req.cookies?.token ||
-    req.headers.authorization?.replace('Bearer ', '');
-
-  if (!token) {
-    next();
-    return;
-  }
-
-  authenticate(req, res, next);
-}

@@ -5,11 +5,6 @@ import { aiService } from '../services/ai/ai.service.js';
 
 const router = Router();
 
-router.get('/dictionary', authenticate, async (req: AuthRequest, res: Response) => {
-  const words = await aiService.getUserDictionary(req.authUser!.id);
-  res.json({ words });
-});
-
 router.post('/dictionary', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { word } = z.object({ word: z.string().min(1).max(100) }).parse(req.body);

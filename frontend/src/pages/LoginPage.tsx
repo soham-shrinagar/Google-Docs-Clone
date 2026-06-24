@@ -1,27 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useApi';
 import { getGoogleAuthUrl } from '../lib/api';
 import { ThemeToggle } from '../components/layout/ThemeToggle';
 import { Logo } from '../components/layout/Logo';
+import { OtpInput, maskEmail } from '../components/auth/OtpInput';
 
 const OAUTH_ERRORS: Record<string, string> = {
   oauth_failed: 'Google sign-in failed. Please try again.',
   oauth_denied: 'Google sign-in was cancelled.',
 };
 
+const RESEND_COOLDOWN_SEC = 60;
+
 export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
   const defaultRegister = searchParams.get('register') === '1' || searchParams.get('mode') === 'signup';
-  const { loginMutation, registerMutation } = useAuth();
+  const { loginMutation, registerMutation, sendOtpMutation } = useAuth();
   const [isRegister, setIsRegister] = useState(defaultRegister);
+  const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const [resendSeconds, setResendSeconds] = useState(0);
 
   useEffect(() => {
     const oauthError = searchParams.get('error');
@@ -36,20 +43,72 @@ export function LoginPage() {
     }
   }, [searchParams]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendSeconds((s) => (s <= 1 ? 0 : s - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendSeconds]);
+
+  const resetOtpStep = useCallback(() => {
+    setStep('credentials');
+    setOtp('');
+    setInfo('');
+    setResendSeconds(0);
+  }, []);
+
+  const toggleMode = () => {
+    setIsRegister(!isRegister);
+    resetOtpStep();
+    setError('');
+  };
+
+  const requestOtp = async () => {
+    setError('');
+    setInfo('');
+    try {
+      const result = await sendOtpMutation.mutateAsync({
+        email,
+        purpose: isRegister ? 'signup' : 'login',
+        password: isRegister ? undefined : password,
+      });
+      setStep('otp');
+      setOtp('');
+      setResendSeconds(RESEND_COOLDOWN_SEC);
+      setInfo(result.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send verification code');
+    }
+  };
+
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await requestOtp();
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
       if (isRegister) {
-        await registerMutation.mutateAsync({ email, password, name });
+        await registerMutation.mutateAsync({ email, password, name, otp });
       } else {
-        await loginMutation.mutateAsync({ email, password });
+        await loginMutation.mutateAsync({ email, password, otp });
       }
       navigate(redirect);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
     }
   };
+
+  const handleResend = async () => {
+    if (resendSeconds > 0 || sendOtpMutation.isPending) return;
+    await requestOtp();
+  };
+
+  const isBusy =
+    loginMutation.isPending || registerMutation.isPending || sendOtpMutation.isPending;
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
@@ -85,85 +144,151 @@ export function LoginPage() {
 
           <div className="surface-card p-7">
             <h1 className="text-lg font-semibold text-ink mb-0.5">
-              {isRegister ? 'Create your account' : 'Welcome back'}
+              {step === 'otp'
+                ? 'Check your email'
+                : isRegister
+                ? 'Create your account'
+                : 'Welcome back'}
             </h1>
             <p className="text-sm text-muted mb-5">
-              {isRegister ? 'Get started in seconds' : 'Sign in to your workspace'}
+              {step === 'otp'
+                ? 'Enter the verification code to continue'
+                : isRegister
+                ? 'Get started in seconds'
+                : 'Sign in to your workspace'}
             </p>
 
             {error && (
               <div className="text-sm badge badge-danger px-4 py-3 rounded-xl mb-4 w-full justify-start">{error}</div>
             )}
+            {info && !error && step === 'credentials' && (
+              <div className="text-sm badge badge-success px-4 py-3 rounded-xl mb-4 w-full justify-start">{info}</div>
+            )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {isRegister && (
+            {step === 'credentials' ? (
+              <form onSubmit={handleCredentialsSubmit} className="space-y-4">
+                {isRegister && (
+                  <div className="field-group">
+                    <User size={18} className="field-icon" />
+                    <input
+                      type="text"
+                      placeholder="Full name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="input-field"
+                    />
+                  </div>
+                )}
                 <div className="field-group">
-                  <User size={18} className="field-icon" />
+                  <Mail size={18} className="field-icon" />
                   <input
-                    type="text"
-                    placeholder="Full name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                     className="input-field"
                   />
                 </div>
-              )}
-              <div className="field-group">
-                <Mail size={18} className="field-icon" />
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="input-field"
+                <div className="field-group">
+                  <Lock size={18} className="field-icon" />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={5}
+                    className="input-field"
+                  />
+                </div>
+
+                <button type="submit" disabled={isBusy} className="btn-primary w-full mt-2">
+                  {sendOtpMutation.isPending ? 'Sending code…' : 'Continue'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleOtpSubmit} className="space-y-5">
+                <div className="flex flex-col items-center text-center pt-1 pb-2">
+                  <div className="w-12 h-12 rounded-2xl bg-accent-soft flex items-center justify-center mb-4">
+                    <ShieldCheck size={22} className="text-accent" />
+                  </div>
+                  <p className="text-sm text-muted leading-relaxed">
+                    Enter the 6-digit code sent to
+                    <span className="block mt-1 font-medium text-ink">{maskEmail(email)}</span>
+                  </p>
+                </div>
+
+                <OtpInput
+                  value={otp}
+                  onChange={setOtp}
+                  disabled={isBusy}
+                  autoFocus
                 />
-              </div>
-              <div className="field-group">
-                <Lock size={18} className="field-icon" />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={5}
-                  className="input-field"
-                />
-              </div>
 
-              <button
-                type="submit"
-                disabled={loginMutation.isPending || registerMutation.isPending}
-                className="btn-primary w-full mt-2"
-              >
-                {loginMutation.isPending || registerMutation.isPending
-                  ? 'Please wait…'
-                  : isRegister
-                  ? 'Create account'
-                  : 'Sign in'}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={isBusy || otp.length !== 6}
+                  className="btn-primary w-full !h-10"
+                >
+                  {loginMutation.isPending || registerMutation.isPending
+                    ? 'Verifying…'
+                    : isRegister
+                    ? 'Create account'
+                    : 'Sign in'}
+                </button>
 
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-line" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-paper px-3 text-muted">or</span>
-              </div>
-            </div>
+                <div className="flex items-center justify-between text-sm">
+                  <button
+                    type="button"
+                    onClick={resetOtpStep}
+                    className="text-muted hover:text-ink transition-colors"
+                  >
+                    ← Change email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendSeconds > 0 || sendOtpMutation.isPending}
+                    className="text-accent font-medium hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
+                  >
+                    {sendOtpMutation.isPending
+                      ? 'Sending…'
+                      : resendSeconds > 0
+                      ? `Resend in ${resendSeconds}s`
+                      : 'Resend code'}
+                  </button>
+                </div>
 
-            <a href={getGoogleAuthUrl()} className="btn-secondary w-full">
-              Continue with Google
-            </a>
+                {info && !error && (
+                  <p className="text-xs text-center text-muted">{info}</p>
+                )}
+              </form>
+            )}
+
+            {step === 'credentials' && (
+              <>
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-line" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-paper px-3 text-muted">or</span>
+                  </div>
+                </div>
+
+                <a href={getGoogleAuthUrl()} className="btn-secondary w-full">
+                  Continue with Google
+                </a>
+              </>
+            )}
 
             <p className="text-center text-sm text-muted mt-6">
               {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
               <button
                 type="button"
-                onClick={() => setIsRegister(!isRegister)}
+                onClick={toggleMode}
                 className="text-accent font-medium hover:underline"
               >
                 {isRegister ? 'Sign in' : 'Register'}

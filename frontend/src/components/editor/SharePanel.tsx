@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Copy, Check, Link2, X, Users, Mail, Loader2 } from 'lucide-react';
+import { Copy, Check, Link2, X, Users, Mail, Loader2, Send } from 'lucide-react';
 import { api } from '../../lib/api';
 
 interface SharePanelProps {
   documentId: string;
   onClose: () => void;
 }
+
+const ROLES = [
+  { value: 'EDITOR', label: 'Editor', desc: 'Can edit the document' },
+  { value: 'COMMENTER', label: 'Commenter', desc: 'Can view and comment' },
+  { value: 'VIEWER', label: 'Viewer', desc: 'Can view only' },
+] as const;
 
 export function SharePanel({ documentId, onClose }: SharePanelProps) {
   const [email, setEmail] = useState('');
@@ -15,6 +21,7 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
   const [collaborators, setCollaborators] = useState<
     Array<{ id: string; name: string; email: string; color: string; role: string }>
   >([]);
@@ -33,9 +40,8 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
     setError('');
     try {
       const { token } = await api.createShareLink(documentId);
-      const url = `${window.location.origin}/join/${token}`;
-      setShareUrl(url);
-      setSuccess('Share link created!');
+      setShareUrl(`${window.location.origin}/join/${token}`);
+      setSuccess('Share link ready — copy or send via email.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create link');
     } finally {
@@ -44,11 +50,21 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
   };
 
   const handleCopy = async () => {
-    if (!shareUrl) {
-      await handleCreateLink();
-      return;
+    let url = shareUrl;
+    if (!url) {
+      setLoading(true);
+      try {
+        const { token } = await api.createShareLink(documentId);
+        url = `${window.location.origin}/join/${token}`;
+        setShareUrl(url);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to create link');
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
     }
-    await navigator.clipboard.writeText(shareUrl);
+    await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -56,140 +72,160 @@ export function SharePanel({ documentId, onClose }: SharePanelProps) {
   const handleShareEmail = async () => {
     const trimmed = email.trim();
     if (!trimmed) return;
-    setLoading(true);
+    setEmailLoading(true);
     setError('');
     setSuccess('');
     try {
-      const result = await api.shareDocument(documentId, trimmed, role);
+      const result = await api.shareDocument(
+        documentId,
+        trimmed,
+        role,
+        window.location.origin
+      );
+      if (result.docUrl) {
+        setShareUrl(result.docUrl);
+      }
       if (result.emailSent) {
-        setSuccess(
-          `Invite sent to ${trimmed}. Check inbox and spam/promotions — it may take a minute to arrive.`
-        );
+        setSuccess(`Invite sent to ${trimmed}`);
+        setEmail('');
       } else {
         setError(
-          `Access granted for ${trimmed}, but the email could not be sent. Copy the share link above and send it manually.`
+          `Could not deliver email to ${trimmed}. Copy the share link above and send it manually.`
         );
       }
-      setEmail('');
       const { collaborators: list } = await api.getCollaborators(documentId);
       setCollaborators(list);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Share failed');
     } finally {
-      setLoading(false);
+      setEmailLoading(false);
     }
   };
 
   return (
-    <div className="fixed right-4 top-14 w-[min(calc(100vw-2rem),22rem)] sm:w-[min(calc(100vw-2rem),28rem)] surface-card z-50 p-5 animate-fade-up">
-      <div className="flex items-center justify-between mb-4">
+    <div className="fixed right-4 top-14 w-[min(calc(100vw-2rem),22rem)] sm:w-[min(calc(100vw-2rem),28rem)] surface-card z-50 animate-fade-up overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-line">
         <h3 className="font-semibold text-ink flex items-center gap-2">
-          <Users size={18} className="text-accent" /> Share document
+          <Users size={18} className="text-accent" /> Share
         </h3>
         <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-canvas text-muted hover:text-ink">
           <X size={16} />
         </button>
       </div>
 
-      <div className="mb-4">
-        <label className="text-xs font-medium text-muted uppercase tracking-wide">Share link</label>
-        <p className="text-xs text-muted mb-2 mt-1">Anyone with the link can join as an editor (must be signed in).</p>
-        <div className="flex gap-2 mt-1">
-          <input
-            readOnly
-            value={shareUrl}
-            placeholder="Click copy to generate link…"
-            className="input-field flex-1 min-w-0 !py-2 text-xs bg-canvas truncate"
-          />
+      <div className="p-5 space-y-5 max-h-[calc(100vh-6rem)] overflow-y-auto scroll-panel">
+        <section>
+          <label className="text-xs font-medium text-muted uppercase tracking-wide">Share link</label>
+          <p className="text-xs text-muted mt-1 mb-2">Anyone with this link can join after signing in.</p>
+          <div className="flex gap-2">
+            <input
+              readOnly
+              value={shareUrl}
+              placeholder="Generate a link to share…"
+              className="input-field flex-1 min-w-0 !py-2 text-xs bg-canvas truncate"
+            />
+            <button
+              type="button"
+              onClick={handleCopy}
+              disabled={loading}
+              className="btn-secondary !px-3 shrink-0"
+              title="Copy link"
+            >
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+            </button>
+          </div>
+          {!shareUrl && (
+            <button
+              type="button"
+              onClick={handleCreateLink}
+              disabled={loading}
+              className="mt-2 flex items-center gap-1.5 text-sm text-accent hover:underline"
+            >
+              <Link2 size={14} /> Generate link
+            </button>
+          )}
+        </section>
+
+        <section className="border-t border-line pt-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Mail size={14} className="text-accent" />
+            <label className="text-xs font-medium text-muted uppercase tracking-wide">Invite by email</label>
+          </div>
+          <p className="text-xs text-muted mb-3">
+            We&apos;ll send them a link to open this document directly.
+          </p>
+
+          <div className="space-y-2">
+            <input
+              type="email"
+              placeholder="name@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !emailLoading && email.trim() && handleShareEmail()}
+              className="input-field w-full text-sm"
+              autoComplete="email"
+            />
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="input-field w-full text-sm"
+            >
+              {ROLES.map((r) => (
+                <option key={r.value} value={r.value}>{r.label} — {r.desc}</option>
+              ))}
+            </select>
+          </div>
+
           <button
             type="button"
-            onClick={handleCopy}
-            disabled={loading}
-            className="btn-primary !px-3 !py-2 shrink-0"
+            onClick={handleShareEmail}
+            disabled={emailLoading || !email.trim()}
+            className="btn-primary w-full mt-3 !h-10 flex items-center justify-center gap-2"
           >
-            {copied ? <Check size={16} /> : <Copy size={16} />}
-            {copied ? 'Copied' : 'Copy'}
+            {emailLoading ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Send size={16} />
+            )}
+            Send invite
           </button>
-        </div>
-        {!shareUrl && (
-          <button
-            type="button"
-            onClick={handleCreateLink}
-            disabled={loading}
-            className="mt-2 flex items-center gap-1.5 text-sm text-accent hover:underline"
-          >
-            <Link2 size={14} /> Generate share link
-          </button>
+        </section>
+
+        {error && (
+          <div className="text-sm text-ink bg-canvas border border-line rounded-xl px-3.5 py-2.5">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="text-sm rounded-xl px-3.5 py-2.5 bg-accent-soft border border-accent/20 text-ink flex items-start gap-2">
+            <Check size={16} className="text-accent shrink-0 mt-0.5" />
+            <span>{success}</span>
+          </div>
+        )}
+
+        {collaborators.length > 0 && (
+          <section className="border-t border-line pt-4">
+            <p className="text-xs font-medium text-muted uppercase tracking-wide mb-3">People with access</p>
+            <ul className="space-y-2 max-h-36 overflow-y-auto scroll-panel">
+              {collaborators.map((c) => (
+                <li key={c.id} className="flex items-center gap-2.5 text-sm">
+                  <span
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+                    style={{ backgroundColor: c.color }}
+                  >
+                    {c.name.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate text-ink">{c.name}</p>
+                    <p className="text-xs text-muted truncate">{c.email}</p>
+                  </div>
+                  <span className="text-xs text-muted capitalize shrink-0">{c.role.toLowerCase()}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </div>
-
-      <div className="border-t border-line pt-4 mb-4">
-        <label className="text-xs font-medium text-muted uppercase tracking-wide flex items-center gap-1.5">
-          <Mail size={12} /> Invite by email
-        </label>
-        <p className="text-xs text-muted mb-3 mt-1">
-          We&apos;ll email them a direct link to open this document. New users can sign up via the link.
-        </p>
-        <div className="space-y-2">
-          <input
-            type="email"
-            placeholder="collaborator@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !loading && email.trim() && handleShareEmail()}
-            className="input-field w-full !py-2.5 !h-10 text-sm"
-            autoComplete="email"
-          />
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="input-field w-full !py-2.5 !h-10 text-sm"
-          >
-            <option value="EDITOR">Editor</option>
-            <option value="COMMENTER">Commenter</option>
-            <option value="VIEWER">Viewer</option>
-          </select>
-        </div>
-        <button
-          type="button"
-          onClick={handleShareEmail}
-          disabled={loading || !email.trim()}
-          className="btn-primary w-full mt-3 !py-2.5 flex items-center justify-center gap-2"
-        >
-          {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-          Send email invite
-        </button>
-      </div>
-
-      {error && (
-        <p className="text-sm text-ink bg-canvas border border-line rounded-lg px-3 py-2 mb-2">{error}</p>
-      )}
-      {success && (
-        <p className="text-sm text-accent bg-accent-soft rounded-lg px-3 py-2 mb-2">{success}</p>
-      )}
-
-      {collaborators.length > 0 && (
-        <div className="border-t border-line pt-3">
-          <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">People with access</p>
-          <ul className="space-y-2 max-h-32 overflow-y-auto scroll-panel">
-            {collaborators.map((c) => (
-              <li key={c.id} className="flex items-center gap-2 text-sm">
-                <span
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
-                  style={{ backgroundColor: c.color }}
-                >
-                  {c.name.charAt(0).toUpperCase()}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate text-ink">{c.name}</p>
-                  <p className="text-xs text-muted truncate">{c.email}</p>
-                </div>
-                <span className="text-xs text-muted capitalize shrink-0">{c.role.toLowerCase()}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

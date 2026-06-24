@@ -14,6 +14,24 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function formatApiError(error: unknown): string {
+  if (typeof error === 'string') {
+    try {
+      const parsed = JSON.parse(error) as Array<{ message?: string }>;
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => item.message).filter(Boolean).join(', ') || error;
+      }
+    } catch {
+      return error;
+    }
+    return error;
+  }
+  if (Array.isArray(error)) {
+    return (error as Array<{ message?: string }>).map((item) => item.message).filter(Boolean).join(', ') || 'Request failed';
+  }
+  return 'Request failed';
+}
+
 async function request<T>(baseUrl: string, endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { params, ...init } = options;
   let url = `${baseUrl}${endpoint}`;
@@ -32,22 +50,29 @@ async function request<T>(baseUrl: string, endpoint: string, options: RequestOpt
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || `HTTP ${res.status}`);
+    const body = await res.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(formatApiError(body.error) || `HTTP ${res.status}`);
   }
 
   return res.json();
 }
 
 export const api = {
-  register(data: { email: string; password: string; name: string }) {
+  sendOtp(data: { email: string; purpose: 'signup' | 'login'; password?: string }) {
+    return request<{ message: string }>(API_URL, '/api/auth/otp/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  register(data: { email: string; password: string; name: string; otp: string }) {
     return request<{ user: import('../types').User; token: string }>(API_URL, '/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  login(data: { email: string; password: string }) {
+  login(data: { email: string; password: string; otp: string }) {
     return request<{ user: import('../types').User; token: string }>(API_URL, '/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -156,13 +181,13 @@ export const api = {
     return request(API_URL, `/api/documents/${id}`, { method: 'DELETE' });
   },
 
-  shareDocument(id: string, email: string, role: string) {
+  shareDocument(id: string, email: string, role: string, appUrl?: string) {
     return request<{ permission: unknown; emailSent: boolean; docUrl: string }>(
       API_URL,
       `/api/documents/${id}/share`,
       {
         method: 'POST',
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ email, role, ...(appUrl && { appUrl }) }),
       }
     );
   },

@@ -6,10 +6,13 @@ import { authenticate, type AuthRequest } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { config } from '../config/index.js';
 import { verifyToken } from '../lib/jwt.js';
+import { formatRouteError } from '../utils/helpers.js';
 
 const router = Router();
 
-const otpCodeSchema = z.string().regex(/^\d{6}$/, 'Verification code must be 6 digits');
+const otpCodeSchema = z
+  .string({ required_error: 'Verification code is required' })
+  .regex(/^\d{6}$/, 'Verification code must be 6 digits');
 
 const sendOtpSchema = z.object({
   email: z.string().email(),
@@ -43,7 +46,7 @@ router.post('/otp/send', authLimiter, async (req: AuthRequest, res: Response) =>
         : await otpService.sendLoginOtp(data.email, data.password!);
     res.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to send verification code';
+    const message = formatRouteError(err, 'Failed to send verification code');
     const status = message === 'Invalid credentials' || message === 'User not found' ? 401 : 400;
     res.status(status).json({ error: message });
   }
@@ -56,7 +59,7 @@ router.post('/register', authLimiter, async (req: AuthRequest, res: Response) =>
     setTokenCookie(res, result.token);
     res.status(201).json(result);
   } catch (err) {
-    res.status(400).json({ error: err instanceof Error ? err.message : 'Registration failed' });
+    res.status(400).json({ error: formatRouteError(err, 'Registration failed') });
   }
 });
 
@@ -67,7 +70,7 @@ router.post('/login', authLimiter, async (req: AuthRequest, res: Response) => {
     setTokenCookie(res, result.token);
     res.json(result);
   } catch (err) {
-    res.status(401).json({ error: err instanceof Error ? err.message : 'Login failed' });
+    res.status(401).json({ error: formatRouteError(err, 'Login failed') });
   }
 });
 

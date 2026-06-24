@@ -215,6 +215,36 @@ textarea.input-field {
   padding-left: 2.5rem;
 }
 
+.otp-digit {
+  @apply text-center text-lg font-semibold bg-paper text-ink transition-all;
+  width: 44px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--theme-line-strong);
+  caret-color: transparent;
+}
+
+.otp-digit:focus {
+  outline: none;
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 3px var(--theme-accent-soft);
+  transform: translateY(-1px);
+}
+
+.otp-digit:not(:placeholder-shown),
+.otp-digit:focus {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+}
+
+@media (min-width: 640px) {
+  .otp-digit {
+    width: 48px;
+    height: 56px;
+    font-size: 1.25rem;
+  }
+}
+
 /* ── Badges ── */
 .badge {
   @apply inline-flex items-center gap-1 text-xs font-medium;

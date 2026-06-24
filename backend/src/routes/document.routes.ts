@@ -93,11 +93,12 @@ router.delete('/:id', requirePermission(PermissionRole.OWNER), async (req: AuthR
 
 router.post('/:id/share', requirePermission(PermissionRole.OWNER), async (req: AuthRequest, res: Response) => {
   try {
-    const { email, role } = z.object({
+    const { email, role, appUrl } = z.object({
       email: z.string().email(),
       role: z.nativeEnum(PermissionRole).default(PermissionRole.EDITOR),
+      appUrl: z.string().url().optional(),
     }).parse(req.body);
-    const result = await documentService.share(param(req.params.id), req.authUser!.id, email, role);
+    const result = await documentService.share(param(req.params.id), req.authUser!.id, email, role, appUrl);
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : 'Share failed' });

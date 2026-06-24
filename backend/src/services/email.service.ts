@@ -105,11 +105,12 @@ class EmailService {
         html,
       });
       if (config.nodeEnv === 'development') {
-        console.log(`[email] Share invite sent to ${to} (${info.messageId})`);
+        console.log(`[email] Share invite sent to ${to} → ${docUrl} (${info.messageId})`);
       }
       return true;
     } catch (err) {
-      console.error('[email] Failed to send share email:', err instanceof Error ? err.message : err);
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[email] Failed to send share email to ${to}:`, message);
       return false;
     }
   }

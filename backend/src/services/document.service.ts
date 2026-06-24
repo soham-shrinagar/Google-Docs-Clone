@@ -111,7 +111,7 @@ export class DocumentService {
     await prisma.document.delete({ where: { id: documentId } });
   }
 
-  async share(documentId: string, userId: string, email: string, role: PermissionRole) {
+  async share(documentId: string, userId: string, email: string, role: PermissionRole, appUrl?: string) {
     const normalizedEmail = email.trim().toLowerCase();
     const document = await prisma.document.findUnique({
       where: { id: documentId },
@@ -155,9 +155,8 @@ export class DocumentService {
       );
     }
 
-    const docUrl = targetUser
-      ? `${config.clientUrl}/document/${documentId}`
-      : `${config.clientUrl}/join/${shareToken}`;
+    const baseUrl = (appUrl || config.clientUrl).replace(/\/$/, '');
+    const docUrl = `${baseUrl}/join/${shareToken}`;
 
     const emailSent = await emailService.sendDocumentShareEmail({
       to: normalizedEmail,

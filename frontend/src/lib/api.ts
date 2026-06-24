@@ -1,8 +1,11 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
 
 export function getGoogleAuthUrl(): string {
-  const base = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-  return `${base}/api/auth/google`;
+  // Always same-origin in the browser — never link directly to onrender.com (Chrome blocks it).
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/api/auth/google`;
+  }
+  return `${import.meta.env.VITE_API_URL || 'http://localhost:5173'}/api/auth/google`;
 }
 
 interface RequestOptions extends RequestInit {

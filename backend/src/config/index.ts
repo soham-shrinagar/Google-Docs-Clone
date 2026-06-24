@@ -9,6 +9,8 @@ export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  /** Production frontend URL for OAuth redirects (defaults to CLIENT_URL). */
+  publicAppUrl: process.env.PUBLIC_APP_URL || process.env.CLIENT_URL || 'http://localhost:5173',
   jwt: {
     secret: process.env.JWT_SECRET || 'dev-secret-change-me',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',

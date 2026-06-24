@@ -23,13 +23,35 @@ const uploadsDir = path.join(backendDir, '../uploads');
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: false,
 }));
 app.use(cors({
-  origin: [config.clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin(origin, callback) {
+    const allowed = [
+      config.clientUrl,
+      config.publicAppUrl,
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+    ].filter(Boolean);
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    try {
+      if (allowed.includes(origin) || /\.vercel\.app$/.test(new URL(origin).hostname)) {
+        callback(null, true);
+        return;
+      }
+    } catch {
+      /* invalid origin */
+    }
+    callback(null, false);
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));

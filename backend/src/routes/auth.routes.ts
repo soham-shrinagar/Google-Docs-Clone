@@ -7,6 +7,7 @@ import { authLimiter } from '../middleware/rateLimit.js';
 import { config } from '../config/index.js';
 import { verifyToken } from '../lib/jwt.js';
 import { formatRouteError } from '../utils/helpers.js';
+import { encodeOAuthState, oauthCallbackUrl, resolveOAuthOrigin } from '../utils/oauthOrigin.js';
 
 const router = Router();
 
@@ -92,15 +93,24 @@ router.post('/logout', (_req, res: Response) => {
   res.json({ success: true });
 });
 
-router.get('/google', (_req, res: Response) => {
+router.get('/google', (req: AuthRequest, res: Response) => {
   if (!config.google.clientId) {
     res.status(503).json({ error: 'Google OAuth not configured' });
     return;
   }
+  const appOrigin = resolveOAuthOrigin(req);
+  const callback = `${appOrigin}/api/auth/google/callback`;
+  const state = encodeOAuthState(appOrigin);
+
+  if (config.isProduction) {
+    console.log(`[oauth] start origin=${appOrigin} callback=${callback}`);
+  }
+
   const url = `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${config.google.clientId}&` +
-    `redirect_uri=${encodeURIComponent(config.google.callbackUrl)}&` +
-    `response_type=code&scope=email%20profile&access_type=offline`;
+    `redirect_uri=${encodeURIComponent(callback)}&` +
+    `response_type=code&scope=email%20profile&access_type=offline&` +
+    `state=${encodeURIComponent(state)}`;
   res.redirect(url);
 });
 
@@ -121,14 +131,21 @@ router.get('/session', async (req: AuthRequest, res: Response) => {
 });
 
 router.get('/google/callback', async (req: AuthRequest, res: Response) => {
+  const appOrigin = resolveOAuthOrigin(req);
+  const callback = oauthCallbackUrl(req);
+
+  if (config.isProduction) {
+    console.log(`[oauth] callback origin=${appOrigin} redirect_uri=${callback}`);
+  }
+
   try {
     const { code, error } = req.query;
     if (error) {
-      res.redirect(`${config.clientUrl}/login?error=oauth_denied`);
+      res.redirect(`${appOrigin}/login?error=oauth_denied`);
       return;
     }
     if (!code || typeof code !== 'string') {
-      res.redirect(`${config.clientUrl}/login?error=oauth_failed`);
+      res.redirect(`${appOrigin}/login?error=oauth_failed`);
       return;
     }
 
@@ -139,7 +156,7 @@ router.get('/google/callback', async (req: AuthRequest, res: Response) => {
         code,
         client_id: config.google.clientId,
         client_secret: config.google.clientSecret,
-        redirect_uri: config.google.callbackUrl,
+        redirect_uri: callback,
         grant_type: 'authorization_code',
       }),
     });
@@ -147,7 +164,7 @@ router.get('/google/callback', async (req: AuthRequest, res: Response) => {
     const tokens = await tokenRes.json() as { access_token?: string; error?: string; error_description?: string };
     if (!tokenRes.ok || !tokens.access_token) {
       console.error('Google token exchange failed:', tokens.error || tokens.error_description || tokenRes.status);
-      res.redirect(`${config.clientUrl}/login?error=oauth_failed`);
+      res.redirect(`${appOrigin}/login?error=oauth_failed`);
       return;
     }
 
@@ -164,7 +181,7 @@ router.get('/google/callback', async (req: AuthRequest, res: Response) => {
 
     if (!profileRes.ok || !profile.id || !profile.email || !profile.name) {
       console.error('Google profile fetch failed:', profile.error?.message || profileRes.status);
-      res.redirect(`${config.clientUrl}/login?error=oauth_failed`);
+      res.redirect(`${appOrigin}/login?error=oauth_failed`);
       return;
     }
 
@@ -176,10 +193,10 @@ router.get('/google/callback', async (req: AuthRequest, res: Response) => {
     });
 
     setTokenCookie(res, result.token);
-    res.redirect(`${config.clientUrl}/auth/callback#token=${encodeURIComponent(result.token)}`);
+    res.redirect(`${appOrigin}/auth/callback#token=${encodeURIComponent(result.token)}`);
   } catch (err) {
     console.error('Google OAuth callback error:', err);
-    res.redirect(`${config.clientUrl}/login?error=oauth_failed`);
+    res.redirect(`${appOrigin}/login?error=oauth_failed`);
   }
 });
 

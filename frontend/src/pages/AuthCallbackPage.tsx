@@ -11,6 +11,21 @@ function readTokenFromHash(): string | null {
   return params.get('token');
 }
 
+async function loadUserWithRetry(maxAttempts = 3): Promise<{ user: Awaited<ReturnType<typeof api.getMe>>['user'] }> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await api.getMe();
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError;
+}
+
 export function AuthCallbackPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -27,9 +42,21 @@ export function AuthCallbackPage() {
           window.history.replaceState(null, '', window.location.pathname);
         }
 
-        const { user, token } = hashToken
-          ? { user: (await api.getMe()).user, token: hashToken }
-          : await api.completeOAuthSession();
+        let user;
+        let token: string;
+
+        if (hashToken) {
+          token = hashToken;
+          try {
+            ({ user } = await loadUserWithRetry());
+          } catch {
+            // Token was issued by our backend — proceed; dashboard auth query will retry
+            navigate('/dashboard', { replace: true });
+            return;
+          }
+        } else {
+          ({ user, token } = await api.completeOAuthSession());
+        }
 
         if (cancelled) return;
 

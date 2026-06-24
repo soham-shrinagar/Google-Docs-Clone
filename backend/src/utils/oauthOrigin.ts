@@ -13,7 +13,18 @@ function isAllowedOrigin(origin: string): boolean {
   }
 }
 
-/** Explicit production frontend URL — set CLIENT_URL or PUBLIC_APP_URL on Render. */
+function isAllowedCallback(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      isAllowedOrigin(parsed.origin) &&
+      parsed.pathname === '/api/auth/google/callback'
+    );
+  } catch {
+    return false;
+  }
+}
+
 function configuredAppOrigin(): string | null {
   for (const raw of [config.publicAppUrl, config.clientUrl]) {
     const url = raw.replace(/\/$/, '');
@@ -49,47 +60,49 @@ function originFromHeaders(req: Request): string | null {
   return null;
 }
 
-/** Public app URL — never onrender.com (Chrome Safe Browsing blocks it during OAuth). */
+export function parseOAuthState(state: string): { origin: string; callback: string } | null {
+  try {
+    const parsed = JSON.parse(Buffer.from(state, 'base64url').toString('utf8')) as {
+      o?: string;
+      c?: string;
+      t?: number;
+    };
+    if (!parsed.o || !parsed.t) return null;
+    if (Date.now() - parsed.t > 15 * 60 * 1000) return null;
+    if (!isAllowedOrigin(parsed.o)) return null;
+    const callback = parsed.c || `${parsed.o}/api/auth/google/callback`;
+    if (!isAllowedCallback(callback)) return null;
+    return { origin: parsed.o, callback };
+  } catch {
+    return null;
+  }
+}
+
+function oauthStateFromRequest(req: Request): { origin: string; callback: string } | null {
+  const state = req.query.state;
+  if (typeof state !== 'string' || !state) return null;
+  return parseOAuthState(state);
+}
+
 export function publicAppOrigin(req: Request): string {
   return (
-    originFromOAuthState(req) ||
+    oauthStateFromRequest(req)?.origin ||
     configuredAppOrigin() ||
     originFromHeaders(req) ||
     'http://localhost:5173'
   );
 }
 
-export function oauthCallbackUrl(req: Request): string {
-  return `${publicAppOrigin(req)}/api/auth/google/callback`;
-}
-
-export function encodeOAuthState(origin: string): string {
-  return Buffer.from(JSON.stringify({ o: origin, t: Date.now() })).toString('base64url');
-}
-
-export function decodeOAuthState(state: string): string | null {
-  try {
-    const parsed = JSON.parse(Buffer.from(state, 'base64url').toString('utf8')) as {
-      o?: string;
-      t?: number;
-    };
-    if (!parsed.o || !parsed.t) return null;
-    if (Date.now() - parsed.t > 15 * 60 * 1000) return null;
-    if (!isAllowedOrigin(parsed.o)) return null;
-    return parsed.o;
-  } catch {
-    return null;
-  }
-}
-
-function originFromOAuthState(req: Request): string | null {
-  const state = req.query.state;
-  if (typeof state !== 'string' || !state) return null;
-  return decodeOAuthState(state);
-}
-
 export function resolveOAuthOrigin(req: Request): string {
-  const fromState = originFromOAuthState(req);
-  if (fromState) return fromState;
   return publicAppOrigin(req);
+}
+
+export function oauthCallbackUrl(req: Request): string {
+  const fromState = oauthStateFromRequest(req)?.callback;
+  if (fromState) return fromState;
+  return `${resolveOAuthOrigin(req)}/api/auth/google/callback`;
+}
+
+export function encodeOAuthState(origin: string, callback: string): string {
+  return Buffer.from(JSON.stringify({ o: origin, c: callback, t: Date.now() })).toString('base64url');
 }

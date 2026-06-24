@@ -99,8 +99,8 @@ router.get('/google', (req: AuthRequest, res: Response) => {
     return;
   }
   const appOrigin = resolveOAuthOrigin(req);
-  const callback = `${appOrigin}/api/auth/google/callback`;
-  const state = encodeOAuthState(appOrigin);
+  const callback = oauthCallbackUrl(req);
+  const state = encodeOAuthState(appOrigin, callback);
 
   if (config.isProduction) {
     console.log(`[oauth] start origin=${appOrigin} callback=${callback}`);
@@ -163,7 +163,12 @@ router.get('/google/callback', async (req: AuthRequest, res: Response) => {
 
     const tokens = await tokenRes.json() as { access_token?: string; error?: string; error_description?: string };
     if (!tokenRes.ok || !tokens.access_token) {
-      console.error('Google token exchange failed:', tokens.error || tokens.error_description || tokenRes.status);
+      console.error(
+        '[oauth] token exchange failed:',
+        tokens.error || tokens.error_description || tokenRes.status,
+        'redirect_uri=',
+        callback
+      );
       res.redirect(`${appOrigin}/login?error=oauth_failed`);
       return;
     }

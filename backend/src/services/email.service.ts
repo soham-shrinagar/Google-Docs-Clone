@@ -11,11 +11,42 @@ export interface DocumentShareEmailParams {
   isRegistered: boolean;
 }
 
+interface SendEmailParams {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}
+
 class EmailService {
   private transporter: Transporter | null = null;
 
+  private provider(): 'brevo' | 'resend' | 'smtp' | null {
+    if (config.brevo.apiKey && config.brevo.senderEmail) return 'brevo';
+    if (config.resend.apiKey) return 'resend';
+    if (config.smtp.host && config.smtp.user && config.smtp.pass) return 'smtp';
+    return null;
+  }
+
+  /** HTTP API (Brevo or Resend) — works on Render free tier. */
+  usesHttpApi(): boolean {
+    const p = this.provider();
+    return p === 'brevo' || p === 'resend';
+  }
+
   isConfigured(): boolean {
-    return Boolean(config.smtp.host && config.smtp.user && config.smtp.pass);
+    return this.provider() !== null;
+  }
+
+  private brevoSender() {
+    return {
+      name: config.brevo.senderName,
+      email: config.brevo.senderEmail,
+    };
+  }
+
+  private resendFrom(): string {
+    return config.resend.from;
   }
 
   private getTransporter(): Transporter {
@@ -40,16 +71,105 @@ class EmailService {
     return this.transporter;
   }
 
-  async sendDocumentShareEmail(params: DocumentShareEmailParams): Promise<boolean> {
-    if (!this.isConfigured()) {
+  private async sendViaBrevo(params: SendEmailParams): Promise<boolean> {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': config.brevo.apiKey,
+        'Content-Type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify({
+        sender: this.brevoSender(),
+        to: [{ email: params.to }],
+        subject: params.subject,
+        htmlContent: params.html,
+        textContent: params.text,
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[email] Brevo API error (${res.status}):`, body);
+      return false;
+    }
+
+    if (config.nodeEnv === 'development') {
+      const data = await res.json().catch(() => ({})) as { messageId?: string };
+      console.log(`[email] Sent via Brevo to ${params.to}${data.messageId ? ` (${data.messageId})` : ''}`);
+    }
+    return true;
+  }
+
+  private async sendViaResend(params: SendEmailParams): Promise<boolean> {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.resend.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: this.resendFrom(),
+        to: [params.to],
+        subject: params.subject,
+        html: params.html,
+        text: params.text,
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[email] Resend API error (${res.status}):`, body);
+      return false;
+    }
+
+    if (config.nodeEnv === 'development') {
+      const data = await res.json().catch(() => ({})) as { id?: string };
+      console.log(`[email] Sent via Resend to ${params.to}${data.id ? ` (${data.id})` : ''}`);
+    }
+    return true;
+  }
+
+  private async sendViaSmtp(params: SendEmailParams): Promise<boolean> {
+    try {
+      const info = await this.getTransporter().sendMail({
+        from: config.smtp.from,
+        replyTo: config.smtp.user,
+        to: params.to,
+        subject: params.subject,
+        text: params.text,
+        html: params.html,
+      });
       if (config.nodeEnv === 'development') {
-        console.warn(
-          '[email] SMTP not configured — share saved but no email sent. Set SMTP_HOST, SMTP_USER, SMTP_PASS in .env'
+        console.log(`[email] Sent via SMTP to ${params.to} (${info.messageId})`);
+      }
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[email] SMTP failed for ${params.to}:`, message);
+      if (/timeout|ETIMEDOUT|ECONNREFUSED/i.test(message)) {
+        console.error(
+          '[email] Hint: Render free tier blocks SMTP ports 465/587. Set BREVO_API_KEY on Render instead.'
         );
       }
       return false;
     }
+  }
 
+  private async deliver(params: SendEmailParams): Promise<boolean> {
+    const provider = this.provider();
+    if (!provider) {
+      if (config.nodeEnv === 'development') {
+        console.warn('[email] Not configured — set BREVO_API_KEY or SMTP_* in .env');
+      }
+      return false;
+    }
+    if (provider === 'brevo') return this.sendViaBrevo(params);
+    if (provider === 'resend') return this.sendViaResend(params);
+    return this.sendViaSmtp(params);
+  }
+
+  async sendDocumentShareEmail(params: DocumentShareEmailParams): Promise<boolean> {
     const { to, documentTitle, sharerName, role, docUrl, isRegistered } = params;
     const roleLabel = role.charAt(0) + role.slice(1).toLowerCase();
     const subject = `${sharerName} shared "${documentTitle}" with you on CollabDocs`;
@@ -95,24 +215,7 @@ class EmailService {
       `Open: ${docUrl}`,
     ].join('\n\n');
 
-    try {
-      const info = await this.getTransporter().sendMail({
-        from: config.smtp.from,
-        replyTo: config.smtp.user,
-        to,
-        subject,
-        text,
-        html,
-      });
-      if (config.nodeEnv === 'development') {
-        console.log(`[email] Share invite sent to ${to} → ${docUrl} (${info.messageId})`);
-      }
-      return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[email] Failed to send share email to ${to}:`, message);
-      return false;
-    }
+    return this.deliver({ to, subject, html, text });
   }
 
   async sendOtpEmail(params: {
@@ -120,13 +223,6 @@ class EmailService {
     code: string;
     purpose: 'SIGNUP' | 'LOGIN';
   }): Promise<boolean> {
-    if (!this.isConfigured()) {
-      if (config.nodeEnv === 'development') {
-        console.warn('[email] SMTP not configured — OTP not emailed');
-      }
-      return false;
-    }
-
     const { to, code, purpose } = params;
     const actionLabel = purpose === 'SIGNUP' ? 'complete your sign up' : 'sign in';
     const subject = `Your CollabDocs verification code: ${code}`;
@@ -159,20 +255,7 @@ class EmailService {
 
     const text = `Your CollabDocs verification code is ${code}. It expires in 10 minutes. Use it to ${actionLabel}.`;
 
-    try {
-      await this.getTransporter().sendMail({
-        from: config.smtp.from,
-        replyTo: config.smtp.user,
-        to,
-        subject,
-        text,
-        html,
-      });
-      return true;
-    } catch (err) {
-      console.error('[email] Failed to send OTP:', err instanceof Error ? err.message : err);
-      return false;
-    }
+    return this.deliver({ to, subject, html, text });
   }
 }
 

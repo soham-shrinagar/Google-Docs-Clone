@@ -69,7 +69,12 @@ export class OtpService {
         console.log(`[otp] ${purpose} code for ${email}: ${code}`);
         return { message: 'Verification code sent (see server console in development)' };
       }
-      throw new Error('Failed to send verification email. Check SMTP settings.');
+      if (emailService.usesHttpApi()) {
+        throw new Error('Failed to send verification email. Check BREVO_API_KEY and BREVO_SENDER_EMAIL on Render.');
+      }
+      throw new Error(
+        'Failed to send verification email. Render free tier blocks Gmail SMTP — add BREVO_API_KEY on Render, or upgrade to a paid instance.'
+      );
     }
 
     return { message: 'Verification code sent to your email' };

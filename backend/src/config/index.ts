@@ -26,6 +26,16 @@ export const config = {
     pass: process.env.SMTP_PASS || '',
     from: process.env.SMTP_FROM || 'CollabDocs <noreply@collabdocs.local>',
   },
+  /** HTTP email APIs — work on Render free tier (HTTPS port 443). Brevo preferred if set. */
+  brevo: {
+    apiKey: process.env.BREVO_API_KEY || '',
+    senderEmail: process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || '',
+    senderName: process.env.BREVO_SENDER_NAME || 'CollabDocs',
+  },
+  resend: {
+    apiKey: process.env.RESEND_API_KEY || '',
+    from: process.env.RESEND_FROM || process.env.SMTP_FROM || 'CollabDocs <onboarding@resend.dev>',
+  },
   ai: {
     provider: process.env.AI_PROVIDER || 'openai',
     openaiApiKey: process.env.OPENAI_API_KEY || '',

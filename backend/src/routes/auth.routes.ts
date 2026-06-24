@@ -1,6 +1,7 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { authService } from '../services/auth.service.js';
+import { otpService } from '../services/otp.service.js';
 import { authenticate, type AuthRequest } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { config } from '../config/index.js';
@@ -8,21 +9,50 @@ import { verifyToken } from '../lib/jwt.js';
 
 const router = Router();
 
+const otpCodeSchema = z.string().regex(/^\d{6}$/, 'Verification code must be 6 digits');
+
+const sendOtpSchema = z.object({
+  email: z.string().email(),
+  purpose: z.enum(['signup', 'login']),
+  password: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.purpose === 'login' && !data.password) {
+    ctx.addIssue({ code: 'custom', message: 'Password is required', path: ['password'] });
+  }
+});
+
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(5),
   name: z.string().min(1).max(100),
+  otp: otpCodeSchema,
 });
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+  otp: otpCodeSchema,
+});
+
+router.post('/otp/send', authLimiter, async (req: AuthRequest, res: Response) => {
+  try {
+    const data = sendOtpSchema.parse(req.body);
+    const result =
+      data.purpose === 'signup'
+        ? await otpService.sendSignupOtp(data.email)
+        : await otpService.sendLoginOtp(data.email, data.password!);
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to send verification code';
+    const status = message === 'Invalid credentials' || message === 'User not found' ? 401 : 400;
+    res.status(status).json({ error: message });
+  }
 });
 
 router.post('/register', authLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const data = registerSchema.parse(req.body);
-    const result = await authService.register(data.email, data.password, data.name);
+    const result = await authService.register(data.email, data.password, data.name, data.otp);
     setTokenCookie(res, result.token);
     res.status(201).json(result);
   } catch (err) {
@@ -33,7 +63,7 @@ router.post('/register', authLimiter, async (req: AuthRequest, res: Response) =>
 router.post('/login', authLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const data = loginSchema.parse(req.body);
-    const result = await authService.login(data.email, data.password);
+    const result = await authService.login(data.email, data.password, data.otp);
     setTokenCookie(res, result.token);
     res.json(result);
   } catch (err) {
@@ -143,8 +173,6 @@ router.get('/google/callback', async (req: AuthRequest, res: Response) => {
     });
 
     setTokenCookie(res, result.token);
-    // Pass token in URL hash — Vercel (frontend) and Render (API) are different domains,
-    // so the httpOnly cookie cannot be read by the frontend after redirect.
     res.redirect(`${config.clientUrl}/auth/callback#token=${encodeURIComponent(result.token)}`);
   } catch (err) {
     console.error('Google OAuth callback error:', err);

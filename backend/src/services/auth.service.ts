@@ -1,20 +1,25 @@
 import bcrypt from 'bcryptjs';
+import { OtpPurpose } from '../generated/prisma/client.js';
 import { prisma } from '../lib/prisma.js';
 import { signToken } from '../lib/jwt.js';
 import { assignUserColor } from '../utils/helpers.js';
+import { otpService } from './otp.service.js';
 
 export class AuthService {
-  async register(email: string, password: string, name: string) {
-    const existing = await prisma.user.findUnique({ where: { email } });
+  async register(email: string, password: string, name: string, otp: string) {
+    const normalizedEmail = otpService.normalizeEmail(email);
+    await otpService.verify(normalizedEmail, OtpPurpose.SIGNUP, otp);
+
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) throw new Error('Email already registered');
 
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         name,
         passwordHash,
-        color: assignUserColor(email),
+        color: assignUserColor(normalizedEmail),
       },
     });
 
@@ -22,14 +27,16 @@ export class AuthService {
     return { user: this.sanitizeUser(user), token };
   }
 
-  async login(email: string, password: string) {
-    const normalizedEmail = email.trim().toLowerCase();
+  async login(email: string, password: string, otp: string) {
+    const normalizedEmail = otpService.normalizeEmail(email);
     const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) throw new Error('User not found');
     if (!user.passwordHash) throw new Error('This account uses Google sign-in. Please continue with Google.');
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new Error('Invalid credentials');
+
+    await otpService.verify(normalizedEmail, OtpPurpose.LOGIN, otp);
 
     const token = signToken(user);
     return { user: this.sanitizeUser(user), token };

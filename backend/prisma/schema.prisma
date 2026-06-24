@@ -87,6 +87,24 @@ enum SummaryFormat {
   ACTION_ITEMS
 }
 
+enum OtpPurpose {
+  SIGNUP
+  LOGIN
+}
+
+model EmailOtp {
+  id        String     @id @default(uuid())
+  email     String
+  codeHash  String
+  purpose   OtpPurpose
+  attempts  Int        @default(0)
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+
+  @@index([email, purpose])
+  @@map("email_otps")
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique

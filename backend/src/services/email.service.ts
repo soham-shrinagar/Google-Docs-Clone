@@ -113,6 +113,66 @@ class EmailService {
       return false;
     }
   }
+
+  async sendOtpEmail(params: {
+    to: string;
+    code: string;
+    purpose: 'SIGNUP' | 'LOGIN';
+  }): Promise<boolean> {
+    if (!this.isConfigured()) {
+      if (config.nodeEnv === 'development') {
+        console.warn('[email] SMTP not configured — OTP not emailed');
+      }
+      return false;
+    }
+
+    const { to, code, purpose } = params;
+    const actionLabel = purpose === 'SIGNUP' ? 'complete your sign up' : 'sign in';
+    const subject = `Your CollabDocs verification code: ${code}`;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Segoe UI',system-ui,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:#fff;border-radius:16px;border:1px solid #e4e4e7;overflow:hidden;">
+        <tr><td style="background:#1e1b4b;padding:24px 28px;">
+          <p style="margin:0;color:#fff;font-size:18px;font-weight:600;">CollabDocs</p>
+          <p style="margin:6px 0 0;color:#a5b4fc;font-size:13px;">Email verification</p>
+        </td></tr>
+        <tr><td style="padding:28px;text-align:center;">
+          <p style="margin:0 0 8px;color:#52525b;font-size:15px;">Use this code to ${actionLabel}:</p>
+          <p style="margin:16px 0;font-size:32px;font-weight:700;letter-spacing:8px;color:#1e1b4b;font-family:monospace;">${code}</p>
+          <p style="margin:0;color:#a1a1aa;font-size:13px;line-height:1.5;">
+            This code expires in 10 minutes.<br>
+            If you didn't request this, you can ignore this email.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+    const text = `Your CollabDocs verification code is ${code}. It expires in 10 minutes. Use it to ${actionLabel}.`;
+
+    try {
+      await this.getTransporter().sendMail({
+        from: config.smtp.from,
+        replyTo: config.smtp.user,
+        to,
+        subject,
+        text,
+        html,
+      });
+      return true;
+    } catch (err) {
+      console.error('[email] Failed to send OTP:', err instanceof Error ? err.message : err);
+      return false;
+    }
+  }
 }
 
 function escapeHtml(value: string): string {

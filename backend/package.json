@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "db:generate": "prisma generate",
     "db:push": "tsx scripts/db-push.ts",
+    "db:reset": "tsx scripts/db-reset.ts",
     "db:verify": "tsx scripts/verify-schema.ts",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy"

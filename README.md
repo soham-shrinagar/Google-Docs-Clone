@@ -138,7 +138,3 @@ Create a project at [neon.tech](https://neon.tech), copy the connection string t
 2. Toggle "CRDT Internals" → watch operations, vector clocks, and merge events
 3. Use Network Simulator → disconnect, edit offline, reconnect → automatic merge
 4. Open Version History → restore or reconstruct at any timestamp
-
-## License
-
-MIT

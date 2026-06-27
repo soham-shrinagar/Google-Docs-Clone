@@ -14,6 +14,7 @@ import { WorkspacePropertiesPanel } from '../components/workspace/WorkspacePrope
 import { WorkspacePageStrip } from '../components/workspace/WorkspacePageStrip';
 import { WorkspaceTextEditor } from '../components/workspace/WorkspaceTextEditor';
 import type { WorkspaceTool, WorkspaceElementData } from '../lib/workspace/types';
+import { getWorkspaceToolCursor } from '../lib/workspace/toolCursors';
 import {
   deletePage,
   duplicatePage,
@@ -198,7 +199,10 @@ export function WorkspaceEditorPage({ document }: Props) {
       </header>
 
       <div className="flex flex-1 min-h-0">
-        <div className="flex-1 overflow-y-auto min-w-0 bg-[#e8eaed] relative">
+        <div
+          className="flex-1 overflow-y-auto min-w-0 bg-[#e8eaed] relative"
+          style={{ cursor: getWorkspaceToolCursor(activeTool) }}
+        >
           {!localReady && displayPages.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-[#e8eaed]/80 z-10">
               <PageLoader message="Syncing pages…" compact />

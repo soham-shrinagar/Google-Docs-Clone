@@ -16,6 +16,7 @@ import {
 import { resolveUploadUrl } from '../../lib/uploads';
 import { api } from '../../lib/api';
 import { renderPdfPageToCanvas } from '../../lib/workspace/pdfPageRender';
+import { getWorkspaceToolCursor, isPlacementTool } from '../../lib/workspace/toolCursors';
 
 function useBgImage(url?: string | null) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -113,6 +114,19 @@ function PageStage({
   const shapeDraft = useRef<ShapeDraft | null>(null);
   const [penPreview, setPenPreview] = useState<number[]>([]);
   const [shapePreview, setShapePreview] = useState<ShapeDraft | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  const toolCursor = getWorkspaceToolCursor(activeTool, { drawing: isDrawing });
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const container = stage.container();
+    container.style.cursor = toolCursor;
+    return () => {
+      container.style.cursor = 'default';
+    };
+  }, [toolCursor]);
 
   const sorted = useMemo(
     () => [...elements].sort((a, b) => a.zIndex - b.zIndex),
@@ -147,7 +161,7 @@ function PageStage({
         ref={containerRef}
         data-page-id={page.id}
         className="shadow-xl rounded-sm border border-line bg-white overflow-hidden relative"
-        style={{ width: page.width * zoom, height: page.height * zoom }}
+        style={{ width: page.width * zoom, height: page.height * zoom, cursor: toolCursor }}
       >
         {pdfLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
@@ -169,6 +183,7 @@ function PageStage({
 
             if (activeTool === 'pen' || activeTool === 'highlighter') {
               drawing.current = true;
+              setIsDrawing(true);
               penPoints.current = [pos.x, pos.y];
               setPenPreview([pos.x, pos.y]);
               return;
@@ -217,6 +232,7 @@ function PageStage({
           onMouseup={() => {
             if (drawing.current) {
               drawing.current = false;
+              setIsDrawing(false);
               if (penPoints.current.length >= 4) {
                 onDrawPen(page.id, [...penPoints.current]);
               }
@@ -247,6 +263,7 @@ function PageStage({
                 key={el.id}
                 element={el}
                 editable={editable}
+                activeTool={activeTool}
                 onSelect={(id, additive) => {
                   if (additive) {
                     const next = new Set(selectedIds);
@@ -528,7 +545,11 @@ export function WorkspaceCanvas({
   }, [selectedIds, ydoc, editable, onSelect]);
 
   return (
-    <div ref={containerRef} className="flex flex-col items-center py-8 px-4 min-h-full">
+    <div
+      ref={containerRef}
+      className="flex flex-col items-center py-8 px-4 min-h-full workspace-canvas-area"
+      data-active-tool={activeTool}
+    >
       {pages.map((page) => (
         <PageStage
           key={page.id}

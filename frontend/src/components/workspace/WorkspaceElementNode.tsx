@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Rect, Text, Line, Circle, Group, Arrow, Image as KonvaImage } from 'react-konva';
 import type Konva from 'konva';
-import type { WorkspaceElementData } from '../../lib/workspace/types';
+import type { WorkspaceElementData, WorkspaceTool } from '../../lib/workspace/types';
+import { isPlacementTool, getWorkspaceToolCursor } from '../../lib/workspace/toolCursors';
 
 function useImage(url?: string | null) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -21,6 +22,7 @@ function useImage(url?: string | null) {
 interface Props {
   element: WorkspaceElementData;
   editable: boolean;
+  activeTool: WorkspaceTool;
   onSelect: (id: string, additive?: boolean) => void;
   onChange: (element: WorkspaceElementData) => void;
   onDoubleClickText?: (element: WorkspaceElementData) => void;
@@ -29,6 +31,7 @@ interface Props {
 export function WorkspaceElementNode({
   element,
   editable,
+  activeTool,
   onSelect,
   onChange,
   onDoubleClickText,
@@ -40,13 +43,40 @@ export function WorkspaceElementNode({
 
   if (!visible) return null;
 
+  const canDrag = editable && !locked && activeTool === 'select' && type !== 'pen' && type !== 'line';
+  const placementMode = isPlacementTool(activeTool);
+
+  const elementCursor = (() => {
+    if (placementMode) return 'inherit';
+    if (!editable || locked) return 'default';
+    if (activeTool === 'select') {
+      if (type === 'text' || type === 'sticky') return 'text';
+      return 'move';
+    }
+    return 'default';
+  })();
+
   const dragProps = {
-    draggable: editable && !locked && type !== 'pen' && type !== 'line',
+    draggable: canDrag,
+    onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => {
+      const container = e.target.getStage()?.container();
+      if (container && activeTool === 'select' && !locked && editable) {
+        container.style.cursor = elementCursor;
+      }
+    },
+    onMouseLeave: (e: Konva.KonvaEventObject<MouseEvent>) => {
+      const container = e.target.getStage()?.container();
+      if (container) {
+        container.style.cursor = getWorkspaceToolCursor(activeTool);
+      }
+    },
     onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (placementMode) return;
       e.cancelBubble = true;
       onSelect(element.id, e.evt.shiftKey);
     },
     onTap: (e: Konva.KonvaEventObject<Event>) => {
+      if (placementMode) return;
       e.cancelBubble = true;
       onSelect(element.id);
     },

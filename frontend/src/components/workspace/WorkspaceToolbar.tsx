@@ -56,10 +56,10 @@ export function WorkspaceToolbar({
           title={label}
           onClick={() => onToolChange(id)}
           className={clsx(
-            'p-2 rounded-lg transition-colors shrink-0',
+            'p-2 rounded-lg transition-all duration-150 shrink-0',
             activeTool === id
-              ? 'bg-accent-soft text-accent'
-              : 'text-muted hover:text-ink hover:bg-surface'
+              ? 'bg-accent-soft text-accent ring-2 ring-accent/40 scale-105 shadow-sm'
+              : 'text-muted hover:text-ink hover:bg-surface hover:scale-105'
           )}
         >
           <Icon size={16} />

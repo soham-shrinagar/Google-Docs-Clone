@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useApi';
+import { getGoogleAuthUrl } from '../lib/api';
 import { ThemeToggle } from '../components/layout/ThemeToggle';
 import { Logo } from '../components/layout/Logo';
 import { OtpInput, maskEmail } from '../components/auth/OtpInput';
@@ -264,6 +265,23 @@ export function LoginPage() {
                   <p className="text-xs text-center text-muted">{info}</p>
                 )}
               </form>
+            )}
+
+            {step === 'credentials' && (
+              <>
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-line" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-paper px-3 text-muted">or</span>
+                  </div>
+                </div>
+
+                <a href={getGoogleAuthUrl()} className="btn-secondary w-full">
+                  Continue with Google
+                </a>
+              </>
             )}
 
             <p className="text-center text-sm text-muted mt-6">

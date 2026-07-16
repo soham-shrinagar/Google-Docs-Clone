@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://collabdocs-api-3uab.onrender.com/api/:path*"
+      "destination": "https://google-docs-clone-668j.onrender.com/api/:path*"
     },
     {
       "source": "/uploads/:path*",
-      "destination": "https://collabdocs-api-3uab.onrender.com/uploads/:path*"
+      "destination": "https://google-docs-clone-668j.onrender.com/uploads/:path*"
     },
     {
       "source": "/:path*",

@@ -42,6 +42,22 @@ export class AuthService {
     return { user: this.sanitizeUser(user), token };
   }
 
+  async resetPassword(email: string, newPassword: string, otp: string) {
+    const normalizedEmail = otpService.normalizeEmail(email);
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user) throw new Error('Invalid or expired password reset request');
+
+    await otpService.verify(normalizedEmail, OtpPurpose.RESET_PASSWORD, otp);
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    return { message: 'Password reset successfully' };
+  }
+
   async findOrCreateGoogleUser(profile: {
     id: string;
     email: string;

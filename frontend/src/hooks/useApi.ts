@@ -47,6 +47,10 @@ export function useAuth() {
     mutationFn: api.sendOtp,
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: api.resetPassword,
+  });
+
   const logout = async () => {
     try {
       await api.logout();
@@ -59,7 +63,14 @@ export function useAuth() {
     navigate('/', { replace: true });
   };
 
-  return { meQuery, loginMutation, registerMutation, sendOtpMutation, logout };
+  return {
+    meQuery,
+    loginMutation,
+    registerMutation,
+    sendOtpMutation,
+    resetPasswordMutation,
+    logout,
+  };
 }
 
 export function useDocuments() {

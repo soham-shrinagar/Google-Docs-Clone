@@ -90,6 +90,7 @@ enum SummaryFormat {
 enum OtpPurpose {
   SIGNUP
   LOGIN
+  RESET_PASSWORD
 }
 
 model EmailOtp {

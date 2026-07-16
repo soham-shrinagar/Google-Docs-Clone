@@ -221,10 +221,15 @@ class EmailService {
   async sendOtpEmail(params: {
     to: string;
     code: string;
-    purpose: 'SIGNUP' | 'LOGIN';
+    purpose: 'SIGNUP' | 'LOGIN' | 'RESET_PASSWORD';
   }): Promise<boolean> {
     const { to, code, purpose } = params;
-    const actionLabel = purpose === 'SIGNUP' ? 'complete your sign up' : 'sign in';
+    const actionLabel =
+      purpose === 'SIGNUP'
+        ? 'complete your sign up'
+        : purpose === 'RESET_PASSWORD'
+          ? 'reset your password'
+          : 'sign in';
     const subject = `Your CollabDocs verification code: ${code}`;
 
     const html = `

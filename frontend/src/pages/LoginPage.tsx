@@ -18,11 +18,13 @@ export function LoginPage() {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
   const defaultRegister = searchParams.get('register') === '1' || searchParams.get('mode') === 'signup';
-  const { loginMutation, registerMutation, sendOtpMutation } = useAuth();
+  const { loginMutation, registerMutation, sendOtpMutation, resetPasswordMutation } = useAuth();
   const [isRegister, setIsRegister] = useState(defaultRegister);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
@@ -59,8 +61,20 @@ export function LoginPage() {
 
   const toggleMode = () => {
     setIsRegister(!isRegister);
+    setIsForgotPassword(false);
     resetOtpStep();
     setError('');
+    setPassword('');
+    setConfirmPassword('');
+  };
+
+  const beginPasswordReset = () => {
+    setIsRegister(false);
+    setIsForgotPassword(true);
+    resetOtpStep();
+    setError('');
+    setPassword('');
+    setConfirmPassword('');
   };
 
   const requestOtp = async () => {
@@ -69,8 +83,8 @@ export function LoginPage() {
     try {
       const result = await sendOtpMutation.mutateAsync({
         email,
-        purpose: isRegister ? 'signup' : 'login',
-        password: isRegister ? undefined : password,
+        purpose: isForgotPassword ? 'reset_password' : isRegister ? 'signup' : 'login',
+        password: !isRegister && !isForgotPassword ? password : undefined,
       });
       setStep('otp');
       setOtp('');
@@ -90,7 +104,25 @@ export function LoginPage() {
     e.preventDefault();
     setError('');
     try {
-      if (isRegister) {
+      if (isForgotPassword) {
+        if (password !== confirmPassword) {
+          setError('Passwords do not match');
+          return;
+        }
+        const result = await resetPasswordMutation.mutateAsync({
+          email,
+          newPassword: password,
+          otp,
+        });
+        setIsForgotPassword(false);
+        setStep('credentials');
+        setOtp('');
+        setPassword('');
+        setConfirmPassword('');
+        setResendSeconds(0);
+        setInfo(`${result.message}. You can now sign in.`);
+        return;
+      } else if (isRegister) {
         await registerMutation.mutateAsync({ email, password, name, otp });
       } else {
         await loginMutation.mutateAsync({ email, password, otp });
@@ -107,7 +139,10 @@ export function LoginPage() {
   };
 
   const isBusy =
-    loginMutation.isPending || registerMutation.isPending || sendOtpMutation.isPending;
+    loginMutation.isPending ||
+    registerMutation.isPending ||
+    sendOtpMutation.isPending ||
+    resetPasswordMutation.isPending;
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
@@ -144,14 +179,22 @@ export function LoginPage() {
           <div className="surface-card p-7">
             <h1 className="text-lg font-semibold text-ink mb-0.5">
               {step === 'otp'
-                ? 'Check your email'
+                ? isForgotPassword
+                  ? 'Reset your password'
+                  : 'Check your email'
+                : isForgotPassword
+                ? 'Forgot your password?'
                 : isRegister
                 ? 'Create your account'
                 : 'Welcome back'}
             </h1>
             <p className="text-sm text-muted mb-5">
               {step === 'otp'
-                ? 'Enter the verification code to continue'
+                ? isForgotPassword
+                  ? 'Enter the code and choose a new password'
+                  : 'Enter the verification code to continue'
+                : isForgotPassword
+                ? 'We will send a verification code to your email'
                 : isRegister
                 ? 'Get started in seconds'
                 : 'Sign in to your workspace'}
@@ -190,21 +233,38 @@ export function LoginPage() {
                     className="input-field"
                   />
                 </div>
-                <div className="field-group">
-                  <Lock size={18} className="field-icon" />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={5}
-                    className="input-field"
-                  />
-                </div>
+                {!isForgotPassword && (
+                  <div className="field-group">
+                    <Lock size={18} className="field-icon" />
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={5}
+                      className="input-field"
+                    />
+                  </div>
+                )}
 
+                {!isRegister && !isForgotPassword && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={beginPasswordReset}
+                      className="text-sm text-accent font-medium hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
                 <button type="submit" disabled={isBusy} className="btn-primary w-full mt-2">
-                  {sendOtpMutation.isPending ? 'Sending code…' : 'Continue'}
+                  {sendOtpMutation.isPending
+                    ? 'Sending code…'
+                    : isForgotPassword
+                    ? 'Send reset code'
+                    : 'Continue'}
                 </button>
               </form>
             ) : (
@@ -226,13 +286,52 @@ export function LoginPage() {
                   autoFocus
                 />
 
+                {isForgotPassword && (
+                  <div className="space-y-4">
+                    <div className="field-group">
+                      <Lock size={18} className="field-icon" />
+                      <input
+                        type="password"
+                        placeholder="New password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={5}
+                        autoComplete="new-password"
+                        className="input-field"
+                      />
+                    </div>
+                    <div className="field-group">
+                      <Lock size={18} className="field-icon" />
+                      <input
+                        type="password"
+                        placeholder="Confirm new password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={5}
+                        autoComplete="new-password"
+                        className="input-field"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  disabled={isBusy || otp.length !== 6}
+                  disabled={
+                    isBusy ||
+                    otp.length !== 6 ||
+                    (isForgotPassword && (!password || !confirmPassword))
+                  }
                   className="btn-primary w-full !h-10"
                 >
-                  {loginMutation.isPending || registerMutation.isPending
+                  {resetPasswordMutation.isPending
+                    ? 'Resetting…'
+                    : loginMutation.isPending || registerMutation.isPending
                     ? 'Verifying…'
+                    : isForgotPassword
+                    ? 'Reset password'
                     : isRegister
                     ? 'Create account'
                     : 'Sign in'}
@@ -266,16 +365,35 @@ export function LoginPage() {
               </form>
             )}
 
-            <p className="text-center text-sm text-muted mt-6">
-              {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="text-accent font-medium hover:underline"
-              >
-                {isRegister ? 'Sign in' : 'Register'}
-              </button>
-            </p>
+            {isForgotPassword ? (
+              <p className="text-center text-sm text-muted mt-6">
+                Remember your password?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(false);
+                    resetOtpStep();
+                    setError('');
+                    setPassword('');
+                    setConfirmPassword('');
+                  }}
+                  className="text-accent font-medium hover:underline"
+                >
+                  Sign in
+                </button>
+              </p>
+            ) : (
+              <p className="text-center text-sm text-muted mt-6">
+                {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
+                <button
+                  type="button"
+                  onClick={toggleMode}
+                  className="text-accent font-medium hover:underline"
+                >
+                  {isRegister ? 'Sign in' : 'Register'}
+                </button>
+              </p>
+            )}
           </div>
         </div>
       </div>

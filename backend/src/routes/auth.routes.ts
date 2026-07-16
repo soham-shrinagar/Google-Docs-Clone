@@ -17,7 +17,7 @@ const otpCodeSchema = z
 
 const sendOtpSchema = z.object({
   email: z.string().email(),
-  purpose: z.enum(['signup', 'login']),
+  purpose: z.enum(['signup', 'login', 'reset_password']),
   password: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.purpose === 'login' && !data.password) {
@@ -38,12 +38,19 @@ const loginSchema = z.object({
   otp: otpCodeSchema,
 });
 
+const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  newPassword: z.string().min(5),
+  otp: otpCodeSchema,
+});
+
 router.post('/otp/send', authLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const data = sendOtpSchema.parse(req.body);
-    const result =
-      data.purpose === 'signup'
-        ? await otpService.sendSignupOtp(data.email)
+    const result = data.purpose === 'signup'
+      ? await otpService.sendSignupOtp(data.email)
+      : data.purpose === 'reset_password'
+        ? await otpService.sendPasswordResetOtp(data.email)
         : await otpService.sendLoginOtp(data.email, data.password!);
     res.json(result);
   } catch (err) {
@@ -72,6 +79,16 @@ router.post('/login', authLimiter, async (req: AuthRequest, res: Response) => {
     res.json(result);
   } catch (err) {
     res.status(401).json({ error: formatRouteError(err, 'Login failed') });
+  }
+});
+
+router.post('/password/reset', authLimiter, async (req: AuthRequest, res: Response) => {
+  try {
+    const data = resetPasswordSchema.parse(req.body);
+    const result = await authService.resetPassword(data.email, data.newPassword, data.otp);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: formatRouteError(err, 'Password reset failed') });
   }
 });
 

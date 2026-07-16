@@ -61,7 +61,7 @@ async function request<T>(baseUrl: string, endpoint: string, options: RequestOpt
 }
 
 export const api = {
-  sendOtp(data: { email: string; purpose: 'signup' | 'login'; password?: string }) {
+  sendOtp(data: { email: string; purpose: 'signup' | 'login' | 'reset_password'; password?: string }) {
     return request<{ message: string }>(API_URL, '/api/auth/otp/send', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -77,6 +77,13 @@ export const api = {
 
   login(data: { email: string; password: string; otp: string }) {
     return request<{ user: import('../types').User; token: string }>(API_URL, '/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  resetPassword(data: { email: string; newPassword: string; otp: string }) {
+    return request<{ message: string }>(API_URL, '/api/auth/password/reset', {
       method: 'POST',
       body: JSON.stringify(data),
     });

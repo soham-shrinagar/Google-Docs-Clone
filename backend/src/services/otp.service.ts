@@ -40,6 +40,19 @@ export class OtpService {
     return this.createAndSend(normalized, OtpPurpose.LOGIN);
   }
 
+  async sendPasswordResetOtp(email: string): Promise<{ message: string }> {
+    const normalized = this.normalizeEmail(email);
+    const user = await prisma.user.findUnique({ where: { email: normalized } });
+
+    // Return the same response for unknown addresses to avoid exposing registered accounts.
+    if (!user) {
+      return { message: 'If an account exists, a verification code was sent to your email' };
+    }
+
+    await this.createAndSend(normalized, OtpPurpose.RESET_PASSWORD);
+    return { message: 'If an account exists, a verification code was sent to your email' };
+  }
+
   private async createAndSend(email: string, purpose: OtpPurpose): Promise<{ message: string }> {
     const recent = await prisma.emailOtp.findFirst({
       where: { email, purpose },
